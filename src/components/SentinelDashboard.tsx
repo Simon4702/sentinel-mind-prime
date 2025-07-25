@@ -41,9 +41,11 @@ export const SentinelDashboard = () => {
                   Analyze Behavior
                 </a>
               </Button>
-              <Button variant="outline" size="lg">
-                <Target className="mr-2 h-5 w-5" />
-                Train Users
+              <Button variant="outline" size="lg" asChild>
+                <a href="/threat-monitoring">
+                  <Eye className="mr-2 h-5 w-5" />
+                  Monitor Threats
+                </a>
               </Button>
             </div>
           </div>
