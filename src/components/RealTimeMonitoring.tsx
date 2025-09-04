@@ -29,6 +29,7 @@ import {
   Pause,
   Filter
 } from "lucide-react";
+import ThreatMap from "@/components/ThreatMap";
 
 // Simulated real-time threat data
 const generateThreatData = () => {
@@ -285,61 +286,6 @@ const NetworkMonitor = () => {
   );
 };
 
-const ThreatMap = () => {
-  const threatLocations = [
-    { location: "San Francisco, CA", threats: 12, severity: "MEDIUM" },
-    { location: "New York, NY", threats: 8, severity: "HIGH" },
-    { location: "London, UK", threats: 15, severity: "LOW" },
-    { location: "Tokyo, JP", threats: 23, severity: "CRITICAL" },
-    { location: "Sydney, AU", threats: 6, severity: "MEDIUM" },
-    { location: "Berlin, DE", threats: 9, severity: "LOW" },
-    { location: "Unknown/Tor", threats: 31, severity: "CRITICAL" }
-  ];
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "LOW": return "success";
-      case "MEDIUM": return "warning";
-      case "HIGH": return "destructive";
-      case "CRITICAL": return "destructive";
-      default: return "secondary";
-    }
-  };
-
-  return (
-    <div className="space-y-6">
-      <h3 className="text-xl font-bold">Global Threat Intelligence</h3>
-      
-      <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-primary" />
-            Geographic Threat Distribution
-          </CardTitle>
-          <CardDescription>Real-time threat activity by location</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {threatLocations.map((location, index) => (
-              <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/20">
-                <div className="flex items-center gap-3">
-                  <MapPin className="h-4 w-4 text-muted-foreground" />
-                  <span className="font-medium">{location.location}</span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <span className="text-sm text-muted-foreground">{location.threats} threats</span>
-                  <Badge variant="outline" className={`border-${getSeverityColor(location.severity)}/20 text-${getSeverityColor(location.severity)}`}>
-                    {location.severity}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-};
 
 const SystemHealth = () => {
   const systems = [
@@ -415,7 +361,7 @@ export const RealTimeMonitoring = () => {
         </div>
 
         <Tabs defaultValue="threats" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4 bg-card border-primary/20">
+          <TabsList className="grid w-full grid-cols-5 bg-card border-primary/20">
             <TabsTrigger value="threats" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               Threat Feed
@@ -427,6 +373,10 @@ export const RealTimeMonitoring = () => {
             <TabsTrigger value="geography" className="flex items-center gap-2">
               <Globe className="h-4 w-4" />
               Geography
+            </TabsTrigger>
+            <TabsTrigger value="map" className="flex items-center gap-2">
+              <MapPin className="h-4 w-4" />
+              Global Map
             </TabsTrigger>
             <TabsTrigger value="systems" className="flex items-center gap-2">
               <Server className="h-4 w-4" />
@@ -443,6 +393,56 @@ export const RealTimeMonitoring = () => {
           </TabsContent>
 
           <TabsContent value="geography">
+            <div className="space-y-6">
+              <h3 className="text-xl font-bold">Global Threat Intelligence</h3>
+              
+              <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Globe className="h-5 w-5 text-primary" />
+                    Geographic Threat Distribution
+                  </CardTitle>
+                  <CardDescription>Real-time threat activity by location</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    {[
+                      { location: "San Francisco, CA", threats: 12, severity: "MEDIUM" },
+                      { location: "New York, NY", threats: 8, severity: "HIGH" },
+                      { location: "London, UK", threats: 15, severity: "LOW" },
+                      { location: "Tokyo, JP", threats: 23, severity: "CRITICAL" },
+                      { location: "Sydney, AU", threats: 6, severity: "MEDIUM" },
+                      { location: "Berlin, DE", threats: 9, severity: "LOW" },
+                      { location: "Unknown/Tor", threats: 31, severity: "CRITICAL" }
+                    ].map((location, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/20">
+                        <div className="flex items-center gap-3">
+                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <span className="font-medium">{location.location}</span>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <span className="text-sm text-muted-foreground">{location.threats} threats</span>
+                          <Badge variant="outline" className={`border-${
+                            location.severity === "LOW" ? "success" :
+                            location.severity === "MEDIUM" ? "warning" : 
+                            "destructive"
+                          }/20 text-${
+                            location.severity === "LOW" ? "success" :
+                            location.severity === "MEDIUM" ? "warning" : 
+                            "destructive"
+                          }`}>
+                            {location.severity}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="map">
             <ThreatMap />
           </TabsContent>
 
