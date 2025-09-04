@@ -34,19 +34,25 @@ export const SentinelDashboard = () => {
             <p className="text-xl text-muted-foreground mb-8">
               Elite Behavioral Cyber Defense Platform
             </p>
-            <div className="flex justify-center gap-4">
+            <div className="flex justify-center gap-4 flex-wrap">
               <Button variant="default" size="lg" className="shadow-cyber" asChild>
                 <a href="/behavior-engine">
                   <Brain className="mr-2 h-5 w-5" />
                   Analyze Behavior
                 </a>
               </Button>
-              <Button variant="outline" size="lg" asChild>
-                <a href="/threat-monitoring">
-                  <Eye className="mr-2 h-5 w-5" />
-                  Monitor Threats
-                </a>
-              </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <a href="/threat-monitoring">
+                    <Eye className="mr-2 h-5 w-5" />
+                    Monitor Threats
+                  </a>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <a href="/phishing-training">
+                    <Target className="mr-2 h-5 w-5" />
+                    Phishing Training
+                  </a>
+                </Button>
             </div>
           </div>
         </div>
