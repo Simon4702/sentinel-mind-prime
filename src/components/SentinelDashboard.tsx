@@ -12,13 +12,48 @@ import {
   Eye,
   Zap,
   BarChart3,
-  Activity
+  Activity,
+  LogOut,
+  User
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import heroCyber from "@/assets/hero-cyber.jpg";
 
 export const SentinelDashboard = () => {
+  const { profile, signOut } = useAuth();
+
   return (
     <div className="min-h-screen bg-background">
+      {/* Top Navigation */}
+      <nav className="border-b border-primary/20 bg-card/50 backdrop-blur-sm">
+        <div className="mx-auto max-w-7xl px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Shield className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-xl font-bold">SentinelMind</h1>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.department || 'Security Platform'}
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="text-sm font-medium">{profile?.full_name}</p>
+                <p className="text-xs text-muted-foreground capitalize">
+                  {profile?.role?.replace('_', ' ')} • Level {profile?.security_clearance_level}
+                </p>
+              </div>
+              <Button variant="ghost" size="sm" onClick={signOut}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
       {/* Hero Section */}
       <div className="relative overflow-hidden">
         <div 
