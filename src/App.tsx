@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import BehaviorEngine from "./pages/BehaviorEngine";
 import ThreatMonitoring from "./pages/ThreatMonitoring";
 import PhishingTraining from "./pages/PhishingTraining";
+import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -41,6 +42,11 @@ const App = () => (
             <Route path="/phishing-training" element={
               <ProtectedRoute>
                 <PhishingTraining />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="admin">
+                <Admin />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

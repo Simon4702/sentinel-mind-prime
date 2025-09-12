@@ -17,6 +17,7 @@ import {
   User
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { Link } from "react-router-dom";
 import heroCyber from "@/assets/hero-cyber.jpg";
 
 export const SentinelDashboard = () => {
@@ -45,6 +46,14 @@ export const SentinelDashboard = () => {
                   {profile?.role?.replace('_', ' ')} • Level {profile?.security_clearance_level}
                 </p>
               </div>
+              {profile?.role === 'admin' && (
+                <Link to="/admin">
+                  <Button variant="outline" size="sm">
+                    <Shield className="h-4 w-4 mr-2" />
+                    Admin Panel
+                  </Button>
+                </Link>
+              )}
               <Button variant="ghost" size="sm" onClick={signOut}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Sign Out
