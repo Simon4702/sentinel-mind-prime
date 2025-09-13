@@ -1,5 +1,6 @@
 import { useAuth } from "@/hooks/useAuth";
 import DatabaseViewer from "@/components/DatabaseViewer";
+import UserManagement from "@/components/UserManagement";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,6 +55,11 @@ const Admin = () => {
             </div>
           </CardContent>
         </Card>
+
+        {/* User Management */}
+        <div className="mb-6">
+          <UserManagement />
+        </div>
 
         {/* Database Viewer */}
         <DatabaseViewer />
