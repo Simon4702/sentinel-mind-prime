@@ -13,12 +13,12 @@ import {
   Zap,
   BarChart3,
   Activity,
-  LogOut,
-  User
+  LogOut
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
 import heroCyber from "@/assets/hero-cyber.jpg";
+import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 
 export const SentinelDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -40,12 +40,7 @@ export const SentinelDashboard = () => {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="text-right">
-                <p className="text-sm font-medium">{profile?.full_name}</p>
-                <p className="text-xs text-muted-foreground capitalize">
-                  {profile?.role?.replace('_', ' ')} • Level {profile?.security_clearance_level}
-                </p>
-              </div>
+              <UserProfileDropdown />
               {profile?.role === 'admin' && (
                 <Link to="/admin">
                   <Button variant="outline" size="sm">
@@ -54,10 +49,6 @@ export const SentinelDashboard = () => {
                   </Button>
                 </Link>
               )}
-              <Button variant="ghost" size="sm" onClick={signOut}>
-                <LogOut className="h-4 w-4 mr-2" />
-                Sign Out
-              </Button>
             </div>
           </div>
         </div>
