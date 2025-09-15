@@ -24,10 +24,42 @@ export const SentinelDashboard = () => {
   const { profile, signOut } = useAuth();
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Cyber Shield Background */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <svg 
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-5 w-[800px] h-[800px]" 
+          viewBox="0 0 400 400" 
+          fill="none"
+        >
+          <defs>
+            <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="hsl(195, 100%, 50%)" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="hsl(180, 100%, 50%)" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="hsl(195, 100%, 50%)" stopOpacity="0.1" />
+            </linearGradient>
+          </defs>
+          <path 
+            d="M200 50 L320 100 L320 200 Q320 280 200 350 Q80 280 80 200 L80 100 Z" 
+            stroke="url(#shieldGradient)" 
+            strokeWidth="2" 
+            fill="url(#shieldGradient)"
+          />
+          <path 
+            d="M200 80 L290 115 L290 190 Q290 250 200 310 Q110 250 110 190 L110 115 Z" 
+            stroke="hsl(195, 100%, 50%)" 
+            strokeWidth="1" 
+            fill="none" 
+            opacity="0.3"
+          />
+          <circle cx="200" cy="180" r="40" stroke="hsl(195, 100%, 50%)" strokeWidth="1" fill="none" opacity="0.2" />
+          <path d="M185 175 L195 185 L215 165" stroke="hsl(195, 100%, 50%)" strokeWidth="2" fill="none" opacity="0.4" />
+        </svg>
+      </div>
+
       {/* Top Navigation */}
-      <nav className="border-b border-primary/20 bg-card/50 backdrop-blur-sm">
-        <div className="mx-auto max-w-7xl px-6 py-4">
+      <nav className="border-b border-primary/20 bg-card/50 backdrop-blur-sm relative z-10">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <Shield className="h-8 w-8 text-primary" />
@@ -55,14 +87,14 @@ export const SentinelDashboard = () => {
       </nav>
 
       {/* Hero Section */}
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden z-10">
         <div 
           className="absolute inset-0 bg-cover bg-center opacity-20"
           style={{ backgroundImage: `url(${heroCyber})` }}
         />
         <div className="absolute inset-0 bg-gradient-cyber opacity-80" />
-        <div className="relative px-6 py-20 text-center">
-          <div className="mx-auto max-w-4xl">
+        <div className="relative px-4 py-20 text-center">
+          <div className="container mx-auto max-w-4xl">
             <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-6">
               SentinelMind
             </h1>
@@ -94,8 +126,8 @@ export const SentinelDashboard = () => {
       </div>
 
       {/* Main Dashboard */}
-      <div className="px-6 py-12">
-        <div className="mx-auto max-w-7xl">
+      <div className="px-4 py-12 relative z-10">
+        <div className="container mx-auto max-w-6xl">
           {/* Status Overview */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
