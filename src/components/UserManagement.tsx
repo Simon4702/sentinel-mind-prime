@@ -11,6 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Users, UserPlus, Edit, Trash2, Shield } from "lucide-react";
+import { createUserSchema, updateUserSchema } from "@/lib/validation";
 
 interface Profile {
   id: string;
@@ -43,13 +44,31 @@ const UserManagement = () => {
 
   const fetchUsers = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch profiles
+      const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setUsers(data || []);
+      if (profilesError) throw profilesError;
+
+      // Fetch roles for each user
+      const usersWithRoles = await Promise.all(
+        (profiles || []).map(async (profile) => {
+          const { data: roleData } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', profile.user_id)
+            .maybeSingle();
+
+          return {
+            ...profile,
+            role: roleData?.role || 'employee'
+          };
+        })
+      );
+
+      setUsers(usersWithRoles);
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -70,14 +89,37 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
+      // Validate input
+      const validation = createUserSchema.safeParse({
+        email: newUser.email.trim(),
+        password: newUser.password,
+        full_name: newUser.full_name.trim(),
+        department: newUser.department.trim(),
+        role: newUser.role,
+        security_clearance_level: newUser.security_clearance_level
+      });
+
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const validData = validation.data;
+      
       // Create the user in Supabase Auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newUser.email,
-        password: newUser.password,
+        email: validData.email,
+        password: validData.password,
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
-            full_name: newUser.full_name
+            full_name: validData.full_name
           }
         }
       });
@@ -85,18 +127,28 @@ const UserManagement = () => {
       if (authError) throw authError;
 
       if (authData.user) {
-        // Update the profile with additional details
+        // Update the profile with additional details (no role here)
         const { error: profileError } = await supabase
           .from('profiles')
           .update({
-            full_name: newUser.full_name,
-            department: newUser.department,
-            role: newUser.role,
-            security_clearance_level: newUser.security_clearance_level
+            full_name: validData.full_name,
+            department: validData.department || null,
+            security_clearance_level: validData.security_clearance_level
           })
           .eq('user_id', authData.user.id);
 
         if (profileError) throw profileError;
+
+        // Insert role into user_roles table
+        const { error: roleError } = await supabase
+          .from('user_roles')
+          .insert({
+            user_id: authData.user.id,
+            role: validData.role,
+            assigned_by: authData.user.id
+          });
+
+        if (roleError) throw roleError;
       }
 
       toast({
@@ -132,17 +184,75 @@ const UserManagement = () => {
     try {
       setLoading(true);
       
-      const { error } = await supabase
+      // Validate input
+      const validation = updateUserSchema.safeParse({
+        full_name: selectedUser.full_name?.trim(),
+        department: selectedUser.department?.trim(),
+        role: selectedUser.role,
+        security_clearance_level: selectedUser.security_clearance_level
+      });
+
+      if (!validation.success) {
+        const firstError = validation.error.errors[0];
+        toast({
+          title: "Validation Error",
+          description: firstError.message,
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
+
+      const validData = validation.data;
+      
+      // Update profile (without role)
+      const { error: profileError } = await supabase
         .from('profiles')
         .update({
-          full_name: selectedUser.full_name,
-          department: selectedUser.department,
-          role: selectedUser.role,
-          security_clearance_level: selectedUser.security_clearance_level
+          full_name: validData.full_name,
+          department: validData.department || null,
+          security_clearance_level: validData.security_clearance_level
         })
         .eq('user_id', selectedUser.user_id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
+
+      // Update role in user_roles table if changed
+      if (validData.role) {
+        // First, check if role record exists
+        const { data: existingRole } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', selectedUser.user_id)
+          .maybeSingle();
+
+        if (existingRole && existingRole.role !== validData.role) {
+          // Delete old role and insert new one
+          await supabase
+            .from('user_roles')
+            .delete()
+            .eq('user_id', selectedUser.user_id);
+
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase
+            .from('user_roles')
+            .insert({
+              user_id: selectedUser.user_id,
+              role: validData.role,
+              assigned_by: user?.id
+            });
+        } else if (!existingRole) {
+          // Insert new role if doesn't exist
+          const { data: { user } } = await supabase.auth.getUser();
+          await supabase
+            .from('user_roles')
+            .insert({
+              user_id: selectedUser.user_id,
+              role: validData.role,
+              assigned_by: user?.id
+            });
+        }
+      }
 
       toast({
         title: "Success",
