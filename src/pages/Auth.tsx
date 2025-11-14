@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Loader2, Shield } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { userSignUpSchema, userSignInSchema, emailSchema, passwordSchema } from "@/lib/validation";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -61,8 +62,16 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-    if (!email || !password || !fullName) {
-      setError("Please fill in all fields");
+    // Validate input
+    const validation = userSignUpSchema.safeParse({
+      email: email.trim(),
+      password,
+      fullName: fullName.trim()
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      setError(firstError.message);
       setLoading(false);
       return;
     }
@@ -101,8 +110,15 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-    if (!email || !password) {
-      setError("Please fill in all fields");
+    // Validate input
+    const validation = userSignInSchema.safeParse({
+      email: email.trim(),
+      password
+    });
+
+    if (!validation.success) {
+      const firstError = validation.error.errors[0];
+      setError(firstError.message);
       setLoading(false);
       return;
     }
@@ -128,8 +144,10 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-    if (!email) {
-      setError("Please enter your email address");
+    // Validate email
+    const validation = emailSchema.safeParse(email.trim());
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       setLoading(false);
       return;
     }
@@ -160,6 +178,14 @@ const Auth = () => {
 
     if (!newPassword || !confirmPassword) {
       setError("Please fill in all fields");
+      setLoading(false);
+      return;
+    }
+
+    // Validate password strength
+    const validation = passwordSchema.safeParse(newPassword);
+    if (!validation.success) {
+      setError(validation.error.errors[0].message);
       setLoading(false);
       return;
     }
