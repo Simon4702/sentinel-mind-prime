@@ -30,28 +30,9 @@ import {
   Filter
 } from "lucide-react";
 import ThreatMap from "@/components/ThreatMap";
+import { useThreatData } from "@/hooks/useThreatData";
 
-// Simulated real-time threat data
-const generateThreatData = () => {
-  const threatTypes = ["Malware", "Phishing", "DDoS", "Intrusion", "Data Exfiltration", "Brute Force", "Anomalous Behavior"];
-  const locations = ["San Francisco, CA", "New York, NY", "London, UK", "Tokyo, JP", "Sydney, AU", "Berlin, DE", "Unknown"];
-  const severities = ["LOW", "MEDIUM", "HIGH", "CRITICAL"];
-  const statuses = ["DETECTED", "INVESTIGATING", "CONTAINED", "RESOLVED"];
-
-  return Array.from({ length: 20 }, (_, i) => ({
-    id: `threat_${Date.now()}_${i}`,
-    timestamp: new Date(Date.now() - Math.random() * 3600000).toISOString(),
-    type: threatTypes[Math.floor(Math.random() * threatTypes.length)],
-    severity: severities[Math.floor(Math.random() * severities.length)],
-    status: statuses[Math.floor(Math.random() * statuses.length)],
-    source: `${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}.${Math.floor(Math.random() * 255)}`,
-    target: `internal-${Math.floor(Math.random() * 1000)}.sentinel.local`,
-    location: locations[Math.floor(Math.random() * locations.length)],
-    description: `Suspicious ${threatTypes[Math.floor(Math.random() * threatTypes.length)].toLowerCase()} activity detected`,
-    confidence: Math.floor(Math.random() * 40) + 60
-  }));
-};
-
+// Simulated network metrics generator
 const generateNetworkMetrics = () => ({
   bandwidth: {
     inbound: Math.floor(Math.random() * 500) + 100,
@@ -70,20 +51,8 @@ const generateNetworkMetrics = () => ({
 });
 
 const ThreatFeed = () => {
-  const [threats, setThreats] = useState(generateThreatData());
+  const { threats: dbThreats, alerts, loading } = useThreatData();
   const [isLive, setIsLive] = useState(true);
-
-  useEffect(() => {
-    if (!isLive) return;
-
-    const interval = setInterval(() => {
-      const newThreat = generateThreatData()[0];
-      newThreat.timestamp = new Date().toISOString();
-      setThreats(prev => [newThreat, ...prev.slice(0, 19)]);
-    }, 3000);
-
-    return () => clearInterval(interval);
-  }, [isLive]);
 
   const getSeverityColor = (severity: string) => {
     switch (severity) {
@@ -134,52 +103,63 @@ const ThreatFeed = () => {
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-96">
-          <div className="space-y-4">
-            {threats.map((threat, index) => (
-              <div 
-                key={threat.id}
-                className={`p-4 rounded-lg border transition-all duration-500 ${
-                  index === 0 && isLive ? 'border-primary/40 bg-primary/5 animate-pulse' : 'border-border/20 bg-muted/20'
-                }`}
-              >
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className={`border-${getSeverityColor(threat.severity)}/20 text-${getSeverityColor(threat.severity)}`}>
-                      {threat.severity}
-                    </Badge>
-                    <Badge variant="outline" className={`border-${getStatusColor(threat.status)}/20 text-${getStatusColor(threat.status)}`}>
-                      {threat.status}
-                    </Badge>
+          {loading ? (
+            <div className="flex items-center justify-center h-full">
+              <Activity className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {dbThreats.map((threat, index) => (
+                <div 
+                  key={threat.id}
+                  className={`p-4 rounded-lg border transition-all duration-500 ${
+                    index === 0 && isLive ? 'border-primary/40 bg-primary/5 animate-pulse' : 'border-border/20 bg-muted/20'
+                  }`}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className={`border-${getSeverityColor(threat.severity.toUpperCase())}/20 text-${getSeverityColor(threat.severity.toUpperCase())}`}>
+                        {threat.severity.toUpperCase()}
+                      </Badge>
+                      <Badge variant="outline" className="border-accent/20 text-accent">
+                        {threat.indicator_type}
+                      </Badge>
+                    </div>
+                    <span className="text-xs text-muted-foreground">
+                      {new Date(threat.last_seen).toLocaleTimeString()}
+                    </span>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {new Date(threat.timestamp).toLocaleTimeString()}
-                  </span>
+                  
+                  <h4 className="font-medium mb-1">{threat.threat_type}</h4>
+                  <p className="text-sm text-muted-foreground mb-2">{threat.description || 'No description available'}</p>
+                  
+                  <div className="grid grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <span className="text-muted-foreground">Indicator: </span>
+                      <span className="font-mono">{threat.indicator_value}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Source: </span>
+                      <span className="font-mono">{threat.source}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">First Seen: </span>
+                      <span>{new Date(threat.first_seen).toLocaleDateString()}</span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Confidence: </span>
+                      <span className="font-semibold">{threat.confidence_level || 0}%</span>
+                    </div>
+                  </div>
                 </div>
-                
-                <h4 className="font-medium mb-1">{threat.type} Detection</h4>
-                <p className="text-sm text-muted-foreground mb-2">{threat.description}</p>
-                
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div>
-                    <span className="text-muted-foreground">Source: </span>
-                    <span className="font-mono">{threat.source}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Target: </span>
-                    <span className="font-mono">{threat.target}</span>
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <MapPin className="h-3 w-3" />
-                    <span>{threat.location}</span>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Confidence: </span>
-                    <span className="font-semibold">{threat.confidence}%</span>
-                  </div>
+              ))}
+              {dbThreats.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  No active threats detected
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+            </div>
+          )}
         </ScrollArea>
       </CardContent>
     </Card>
@@ -348,16 +328,42 @@ const SystemHealth = () => {
 };
 
 export const RealTimeMonitoring = () => {
+  const { threats, alerts } = useThreatData();
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="mx-auto max-w-7xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
-            Real-Time Monitoring Center
-          </h1>
-          <p className="text-muted-foreground">
-            Live threat detection and network security monitoring
-          </p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-2">
+                Real-Time Monitoring Center
+              </h1>
+              <p className="text-muted-foreground">
+                Live threat detection and network security monitoring
+              </p>
+            </div>
+            <div className="flex items-center gap-4">
+              <Card className="border-destructive/20">
+                <CardContent className="p-3 flex items-center gap-2">
+                  <AlertTriangle className="h-4 w-4 text-destructive" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Active Threats</p>
+                    <p className="text-xl font-bold">{threats.length}</p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card className="border-warning/20">
+                <CardContent className="p-3 flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-warning" />
+                  <div>
+                    <p className="text-xs text-muted-foreground">Unresolved Alerts</p>
+                    <p className="text-xl font-bold">{alerts.length}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
         </div>
 
         <Tabs defaultValue="threats" className="space-y-6">
