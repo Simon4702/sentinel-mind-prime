@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Globe, AlertTriangle, Shield, Zap, Activity, MapPin } from "lucide-react";
+import { useThreatData } from "@/hooks/useThreatData";
 
 interface ThreatData {
   id: string;
@@ -31,6 +32,7 @@ const ThreatMap = () => {
   const map = useRef<mapboxgl.Map | null>(null);
   const [mapboxToken, setMapboxToken] = useState('');
   const [isMapReady, setIsMapReady] = useState(false);
+  const { threats: dbThreats } = useThreatData();
   const [threatData, setThreatData] = useState<ThreatData[]>([]);
   const [activeThreatCount, setActiveThreatCount] = useState(0);
 
@@ -66,23 +68,6 @@ const ThreatMap = () => {
     "Email", "Web Application", "Network", "Mobile", "IoT Device", 
     "Cloud Service", "Remote Access", "Supply Chain", "Social Engineering"
   ];
-
-  // Generate random threat data
-  const generateThreatData = (): ThreatData => {
-    const source = threatLocations[Math.floor(Math.random() * threatLocations.length)];
-    const target = targetLocations[Math.floor(Math.random() * targetLocations.length)];
-    const severities: ('low' | 'medium' | 'high' | 'critical')[] = ['low', 'medium', 'high', 'critical'];
-    
-    return {
-      id: Math.random().toString(36).substr(2, 9),
-      source,
-      target,
-      type: attackTypes[Math.floor(Math.random() * attackTypes.length)],
-      severity: severities[Math.floor(Math.random() * severities.length)],
-      timestamp: new Date(),
-      attackVector: attackVectors[Math.floor(Math.random() * attackVectors.length)]
-    };
-  };
 
   // Initialize map when token is provided
   useEffect(() => {
@@ -311,26 +296,37 @@ const ThreatMap = () => {
     }
   }, [threatData, isMapReady]);
 
-  // Generate new threats periodically
+  // Convert database threats to map format
   useEffect(() => {
-    const interval = setInterval(() => {
-      const newThreat = generateThreatData();
-      setThreatData(prev => {
-        const updated = [newThreat, ...prev.slice(0, 49)]; // Keep last 50 threats
-        setActiveThreatCount(updated.length);
-        return updated;
-      });
-    }, 3000);
+    if (dbThreats.length === 0) return;
 
-    return () => clearInterval(interval);
-  }, []);
+    const mapThreats: ThreatData[] = dbThreats.slice(0, 20).map(threat => {
+      // Generate random locations for visualization
+      const source = threatLocations[Math.floor(Math.random() * threatLocations.length)];
+      const target = targetLocations[Math.floor(Math.random() * targetLocations.length)];
+
+      return {
+        id: threat.id,
+        source,
+        target,
+        type: threat.threat_type,
+        severity: threat.severity,
+        timestamp: new Date(threat.last_seen),
+        attackVector: threat.indicator_type
+      };
+    });
+
+    setThreatData(mapThreats);
+    setActiveThreatCount(dbThreats.length);
+  }, [dbThreats]);
 
   const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case 'critical': return 'text-red-600 bg-red-100';
-      case 'high': return 'text-orange-600 bg-orange-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      default: return 'text-green-600 bg-green-100';
+    const sev = severity.toLowerCase();
+    switch (sev) {
+      case 'critical': return 'text-destructive bg-destructive/10';
+      case 'high': return 'text-warning bg-warning/10';
+      case 'medium': return 'text-accent bg-accent/10';
+      default: return 'text-success bg-success/10';
     }
   };
 
