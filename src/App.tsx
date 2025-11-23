@@ -11,6 +11,7 @@ import BehaviorEngine from "./pages/BehaviorEngine";
 import ThreatMonitoring from "./pages/ThreatMonitoring";
 import PhishingTraining from "./pages/PhishingTraining";
 import IncidentResponse from "./pages/IncidentResponse";
+import ThreatManagement from "./pages/ThreatManagement";
 import Admin from "./pages/Admin";
 import NotFound from "./pages/NotFound";
 
@@ -48,6 +49,11 @@ const App = () => (
             <Route path="/incident-response" element={
               <ProtectedRoute requiredRole="security_analyst">
                 <IncidentResponse />
+              </ProtectedRoute>
+            } />
+            <Route path="/threat-management" element={
+              <ProtectedRoute requiredRole="security_analyst">
+                <ThreatManagement />
               </ProtectedRoute>
             } />
             <Route path="/admin" element={
