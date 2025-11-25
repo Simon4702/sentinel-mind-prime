@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Activity,
   Settings,
+  BarChart3,
 } from "lucide-react";
 
 const navItems = [
@@ -47,6 +48,12 @@ const navItems = [
     path: "/phishing-training",
     icon: Target,
     roles: ["admin", "security_analyst", "employee"],
+  },
+  {
+    name: "Analytics",
+    path: "/analytics",
+    icon: BarChart3,
+    roles: ["admin", "security_analyst"],
   },
   {
     name: "Admin Panel",
