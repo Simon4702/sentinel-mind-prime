@@ -13,6 +13,7 @@ import PhishingTraining from "./pages/PhishingTraining";
 import IncidentResponse from "./pages/IncidentResponse";
 import ThreatManagement from "./pages/ThreatManagement";
 import Admin from "./pages/Admin";
+import Analytics from "./pages/Analytics";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -59,6 +60,11 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute requiredRole="admin">
                 <Admin />
+              </ProtectedRoute>
+            } />
+            <Route path="/analytics" element={
+              <ProtectedRoute requiredRole="security_analyst">
+                <Analytics />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
