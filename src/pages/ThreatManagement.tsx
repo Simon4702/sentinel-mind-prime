@@ -1,7 +1,12 @@
 import { ThreatManagement as ThreatManagementComponent } from "@/components/ThreatManagement";
+import { Layout } from "@/components/Layout";
 
 const ThreatManagement = () => {
-  return <ThreatManagementComponent />;
+  return (
+    <Layout>
+      <ThreatManagementComponent />
+    </Layout>
+  );
 };
 
 export default ThreatManagement;

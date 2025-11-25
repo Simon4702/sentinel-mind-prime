@@ -1,7 +1,12 @@
 import { IncidentManagement } from "@/components/IncidentManagement";
+import { Layout } from "@/components/Layout";
 
 const IncidentResponse = () => {
-  return <IncidentManagement />;
+  return (
+    <Layout>
+      <IncidentManagement />
+    </Layout>
+  );
 };
 
 export default IncidentResponse;

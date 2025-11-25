@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Link } from "react-router-dom";
 import heroCyber from "@/assets/hero-cyber.jpg";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
+import { Navigation } from "@/components/Navigation";
 
 export const SentinelDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -73,18 +74,15 @@ export const SentinelDashboard = () => {
             
             <div className="flex items-center gap-4">
               <UserProfileDropdown />
-              {profile?.role === 'admin' && (
-                <Link to="/admin">
-                  <Button variant="outline" size="sm">
-                    <Shield className="h-4 w-4 mr-2" />
-                    Admin Panel
-                  </Button>
-                </Link>
-              )}
             </div>
           </div>
         </div>
       </nav>
+
+      {/* Navigation Menu */}
+      <div className="relative z-10">
+        <Navigation />
+      </div>
 
       {/* Hero Section */}
       <div className="relative overflow-hidden z-10">
