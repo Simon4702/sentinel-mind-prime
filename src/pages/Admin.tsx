@@ -1,6 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import DatabaseViewer from "@/components/DatabaseViewer";
 import UserManagement from "@/components/UserManagement";
+import { AuditTrail } from "@/components/AuditTrail";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Database, Settings } from "lucide-react";
@@ -48,6 +49,11 @@ const Admin = () => {
 
           {/* User Management */}
           <UserManagement />
+          
+          {/* Audit Trail */}
+          <div className="mt-6">
+            <AuditTrail />
+          </div>
           
           {/* Database Viewer */}
           <div className="mt-6">
