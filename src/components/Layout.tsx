@@ -3,6 +3,7 @@ import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 import { Navigation } from "@/components/Navigation";
+import { NotificationCenter } from "@/components/NotificationCenter";
 
 interface LayoutProps {
   children: ReactNode;
@@ -28,6 +29,7 @@ export const Layout = ({ children }: LayoutProps) => {
             </div>
             
             <div className="flex items-center gap-4">
+              <NotificationCenter />
               <UserProfileDropdown />
             </div>
           </div>

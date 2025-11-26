@@ -8,6 +8,7 @@ interface Profile {
   email: string;
   full_name: string | null;
   department: string | null;
+  organization_id: string | null;
   role: 'admin' | 'security_analyst' | 'employee';
   security_clearance_level: number;
   last_login_at: string | null;
