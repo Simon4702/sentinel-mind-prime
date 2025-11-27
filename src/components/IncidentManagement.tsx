@@ -23,11 +23,19 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { AlertTriangle, CheckCircle, Clock, Shield, Users } from "lucide-react";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
+import { AlertTriangle, CheckCircle, Clock, Shield, Users, BookOpen } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
 import { useIncidentAssignment } from "@/hooks/useIncidentAssignment";
 import { IncidentAutoAssignment } from "@/components/IncidentAutoAssignment";
+import { IncidentDetails } from "@/components/IncidentDetails";
 
 type Incident = Database["public"]["Tables"]["security_incidents"]["Row"];
 
@@ -38,7 +46,9 @@ export const IncidentManagement = () => {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [viewingIncident, setViewingIncident] = useState<Incident | null>(null);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
 
   // Fetch incidents
   const { data: incidents = [], isLoading } = useQuery({
@@ -356,16 +366,29 @@ export const IncidentManagement = () => {
                       {new Date(incident.detected_at).toLocaleString()}
                     </TableCell>
                     <TableCell>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => {
-                          setSelectedIncident(incident);
-                          setIsDialogOpen(true);
-                        }}
-                      >
-                        Manage
-                      </Button>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="default"
+                          size="sm"
+                          onClick={() => {
+                            setViewingIncident(incident);
+                            setIsSheetOpen(true);
+                          }}
+                        >
+                          <BookOpen className="h-4 w-4 mr-1" />
+                          View Details
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            setSelectedIncident(incident);
+                            setIsDialogOpen(true);
+                          }}
+                        >
+                          Manage
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -374,6 +397,21 @@ export const IncidentManagement = () => {
           )}
         </CardContent>
       </Card>
+
+      {/* Incident Details Sheet */}
+      <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
+        <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>Incident Response</SheetTitle>
+            <SheetDescription>
+              Follow the playbook to respond to this incident
+            </SheetDescription>
+          </SheetHeader>
+          <div className="mt-6">
+            {viewingIncident && <IncidentDetails incident={viewingIncident} />}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 };

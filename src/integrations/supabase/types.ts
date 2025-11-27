@@ -214,6 +214,56 @@ export type Database = {
           },
         ]
       }
+      playbook_executions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          current_step: number
+          executed_by: string
+          id: string
+          incident_id: string
+          notes: string | null
+          playbook_id: string
+          started_at: string
+          step_statuses: Json
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          executed_by: string
+          id?: string
+          incident_id: string
+          notes?: string | null
+          playbook_id: string
+          started_at?: string
+          step_statuses?: Json
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          current_step?: number
+          executed_by?: string
+          id?: string
+          incident_id?: string
+          notes?: string | null
+          playbook_id?: string
+          started_at?: string
+          step_statuses?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playbook_executions_playbook_id_fkey"
+            columns: ["playbook_id"]
+            isOneToOne: false
+            referencedRelation: "security_playbooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -513,6 +563,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_playbooks: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          estimated_time_minutes: number | null
+          id: string
+          incident_type: Database["public"]["Enums"]["incident_type"]
+          is_active: boolean
+          name: string
+          organization_id: string
+          severity: Database["public"]["Enums"]["incident_severity"] | null
+          steps: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_time_minutes?: number | null
+          id?: string
+          incident_type: Database["public"]["Enums"]["incident_type"]
+          is_active?: boolean
+          name: string
+          organization_id: string
+          severity?: Database["public"]["Enums"]["incident_severity"] | null
+          steps?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          estimated_time_minutes?: number | null
+          id?: string
+          incident_type?: Database["public"]["Enums"]["incident_type"]
+          is_active?: boolean
+          name?: string
+          organization_id?: string
+          severity?: Database["public"]["Enums"]["incident_severity"] | null
+          steps?: Json
+          updated_at?: string
+        }
+        Relationships: []
       }
       threat_intelligence: {
         Row: {
