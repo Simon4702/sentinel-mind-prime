@@ -26,12 +26,15 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { AlertTriangle, CheckCircle, Clock, Shield, Users } from "lucide-react";
 import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import { useIncidentAssignment } from "@/hooks/useIncidentAssignment";
+import { IncidentAutoAssignment } from "@/components/IncidentAutoAssignment";
 
 type Incident = Database["public"]["Tables"]["security_incidents"]["Row"];
 
 export const IncidentManagement = () => {
   const { profile, user } = useAuth();
   const queryClient = useQueryClient();
+  const { autoAssignIncident } = useIncidentAssignment();
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterSeverity, setFilterSeverity] = useState<string>("all");
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
@@ -102,15 +105,26 @@ export const IncidentManagement = () => {
   // Create incident mutation
   const createIncidentMutation = useMutation({
     mutationFn: async (incident: Database["public"]["Tables"]["security_incidents"]["Insert"]) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from("security_incidents")
         .insert({
           ...incident,
           organization_id: userProfile?.organization_id || "",
-        });
+        })
+        .select()
+        .single();
       if (error) throw error;
+      return data;
     },
-    onSuccess: () => {
+    onSuccess: async (data) => {
+      // Auto-assign if no assignment was made
+      if (!data.assigned_to && userProfile?.organization_id) {
+        await autoAssignIncident(
+          data.id,
+          userProfile.organization_id,
+          data.department_id
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["security_incidents"] });
       toast.success("Incident created successfully");
       setIsDialogOpen(false);
@@ -253,6 +267,9 @@ export const IncidentManagement = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Auto-Assignment Configuration */}
+      <IncidentAutoAssignment />
 
       {/* Filters */}
       <Card>
