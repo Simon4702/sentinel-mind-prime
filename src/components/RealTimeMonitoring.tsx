@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import ThreatMap from "@/components/ThreatMap";
 import { useThreatData } from "@/hooks/useThreatData";
+import { ThreatEnrichmentPanel } from "@/components/ThreatEnrichmentPanel";
 
 // Simulated network metrics generator
 const generateNetworkMetrics = () => ({
@@ -50,7 +51,11 @@ const generateNetworkMetrics = () => ({
   }
 });
 
-const ThreatFeed = () => {
+interface ThreatFeedProps {
+  onSelectThreat?: (threatId: string) => void;
+}
+
+const ThreatFeed = ({ onSelectThreat }: ThreatFeedProps = {}) => {
   const { threats: dbThreats, alerts, loading } = useThreatData();
   const [isLive, setIsLive] = useState(true);
 
@@ -112,7 +117,8 @@ const ThreatFeed = () => {
               {dbThreats.map((threat, index) => (
                 <div 
                   key={threat.id}
-                  className={`p-4 rounded-lg border transition-all duration-500 ${
+                  onClick={() => onSelectThreat?.(threat.id)}
+                  className={`p-4 rounded-lg border transition-all duration-500 cursor-pointer hover:border-primary/40 ${
                     index === 0 && isLive ? 'border-primary/40 bg-primary/5 animate-pulse' : 'border-border/20 bg-muted/20'
                   }`}
                 >
@@ -329,6 +335,7 @@ const SystemHealth = () => {
 
 export const RealTimeMonitoring = () => {
   const { threats, alerts } = useThreatData();
+  const [selectedThreatId, setSelectedThreatId] = useState<string | null>(null);
 
   return (
     <div className="min-h-screen bg-background p-6">
@@ -367,10 +374,14 @@ export const RealTimeMonitoring = () => {
         </div>
 
         <Tabs defaultValue="threats" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-5 bg-card border-primary/20">
+          <TabsList className="grid w-full grid-cols-6 bg-card border-primary/20">
             <TabsTrigger value="threats" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               Threat Feed
+            </TabsTrigger>
+            <TabsTrigger value="intelligence" className="flex items-center gap-2">
+              <Database className="h-4 w-4" />
+              Intelligence
             </TabsTrigger>
             <TabsTrigger value="network" className="flex items-center gap-2">
               <Monitor className="h-4 w-4" />
@@ -391,7 +402,65 @@ export const RealTimeMonitoring = () => {
           </TabsList>
 
           <TabsContent value="threats">
-            <ThreatFeed />
+            <ThreatFeed onSelectThreat={setSelectedThreatId} />
+          </TabsContent>
+
+          <TabsContent value="intelligence">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Eye className="h-5 w-5 text-primary" />
+                    Select a Threat
+                  </CardTitle>
+                  <CardDescription>
+                    Click on a threat to view enrichment intelligence
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ScrollArea className="h-96">
+                    <div className="space-y-2">
+                      {threats.slice(0, 20).map((threat) => (
+                        <Button
+                          key={threat.id}
+                          variant={selectedThreatId === threat.id ? "default" : "outline"}
+                          className="w-full justify-start text-left h-auto py-3"
+                          onClick={() => setSelectedThreatId(threat.id)}
+                        >
+                          <div className="flex flex-col items-start gap-1 w-full">
+                            <div className="flex items-center gap-2 w-full">
+                              <Badge variant={
+                                threat.severity === 'critical' ? 'destructive' :
+                                threat.severity === 'high' ? 'default' : 'secondary'
+                              } className="text-xs">
+                                {threat.severity}
+                              </Badge>
+                              <span className="text-xs text-muted-foreground">{threat.indicator_type}</span>
+                            </div>
+                            <span className="text-sm font-mono truncate w-full">{threat.indicator_value}</span>
+                          </div>
+                        </Button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </CardContent>
+              </Card>
+              
+              <div>
+                {selectedThreatId ? (
+                  <ThreatEnrichmentPanel threatId={selectedThreatId} />
+                ) : (
+                  <Card className="border-muted/20">
+                    <CardContent className="flex flex-col items-center justify-center h-96 text-center">
+                      <Database className="h-12 w-12 text-muted-foreground mb-4" />
+                      <p className="text-muted-foreground">
+                        Select a threat from the list to view enrichment data
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="network">
