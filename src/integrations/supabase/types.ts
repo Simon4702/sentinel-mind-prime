@@ -609,6 +609,59 @@ export type Database = {
         }
         Relationships: []
       }
+      threat_enrichment: {
+        Row: {
+          created_at: string
+          enriched_at: string
+          enriched_by: string | null
+          enrichment_data: Json
+          geolocation: Json | null
+          id: string
+          related_campaigns: string[] | null
+          reputation_score: number | null
+          source: string
+          threat_actors: string[] | null
+          threat_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enriched_at?: string
+          enriched_by?: string | null
+          enrichment_data?: Json
+          geolocation?: Json | null
+          id?: string
+          related_campaigns?: string[] | null
+          reputation_score?: number | null
+          source: string
+          threat_actors?: string[] | null
+          threat_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enriched_at?: string
+          enriched_by?: string | null
+          enrichment_data?: Json
+          geolocation?: Json | null
+          id?: string
+          related_campaigns?: string[] | null
+          reputation_score?: number | null
+          source?: string
+          threat_actors?: string[] | null
+          threat_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "threat_enrichment_threat_id_fkey"
+            columns: ["threat_id"]
+            isOneToOne: false
+            referencedRelation: "threat_intelligence"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       threat_intelligence: {
         Row: {
           confidence_level: number | null
