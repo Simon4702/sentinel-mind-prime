@@ -22,9 +22,11 @@ import {
   Activity,
   Eye,
   Globe,
-  Lock
+  Lock,
+  Settings
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { EmailIntegrationSetup } from "./EmailIntegrationSetup";
 
 interface PhishingIndicator {
   type: string;
@@ -358,13 +360,22 @@ export const PhishingTrainingSimulator = () => {
           </p>
         </div>
 
-        <Tabs defaultValue="detection" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+        <Tabs defaultValue="integration" className="space-y-6">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="integration" className="gap-1">
+              <Settings className="h-3 w-3" />
+              Email Integration
+            </TabsTrigger>
             <TabsTrigger value="detection">Real-Time Detection</TabsTrigger>
             <TabsTrigger value="training">Interactive Training</TabsTrigger>
             <TabsTrigger value="monitoring">Threat Monitoring</TabsTrigger>
             <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
+
+          {/* Email Integration Setup */}
+          <TabsContent value="integration">
+            <EmailIntegrationSetup />
+          </TabsContent>
 
           {/* Real-Time Detection */}
           <TabsContent value="detection" className="space-y-6">
