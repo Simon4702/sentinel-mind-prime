@@ -74,6 +74,207 @@ export type Database = {
           },
         ]
       }
+      cognitive_profiles: {
+        Row: {
+          activity_patterns: Json | null
+          characteristics: Json | null
+          created_at: string
+          detection_sensitivity: number | null
+          id: string
+          last_analyzed_at: string | null
+          profile_type: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          activity_patterns?: Json | null
+          characteristics?: Json | null
+          created_at?: string
+          detection_sensitivity?: number | null
+          id?: string
+          last_analyzed_at?: string | null
+          profile_type: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          activity_patterns?: Json | null
+          characteristics?: Json | null
+          created_at?: string
+          detection_sensitivity?: number | null
+          id?: string
+          last_analyzed_at?: string | null
+          profile_type?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cognitive_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
+      dark_web_alerts: {
+        Row: {
+          affected_assets: Json | null
+          alert_type: string
+          created_at: string
+          details: Json | null
+          discovered_at: string
+          id: string
+          is_resolved: boolean | null
+          organization_id: string | null
+          resolved_at: string | null
+          severity: string | null
+          source: string | null
+        }
+        Insert: {
+          affected_assets?: Json | null
+          alert_type: string
+          created_at?: string
+          details?: Json | null
+          discovered_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          organization_id?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          source?: string | null
+        }
+        Update: {
+          affected_assets?: Json | null
+          alert_type?: string
+          created_at?: string
+          details?: Json | null
+          discovered_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          organization_id?: string | null
+          resolved_at?: string | null
+          severity?: string | null
+          source?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "dark_web_alerts_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      deception_telemetry: {
+        Row: {
+          attacker_fingerprint: Json | null
+          attacker_ip: string | null
+          created_at: string
+          honeypot_id: string | null
+          id: string
+          intent_analysis: string | null
+          redirected_to_sandbox: boolean | null
+          sandbox_id: string | null
+          technique_used: string | null
+          timeline: Json | null
+        }
+        Insert: {
+          attacker_fingerprint?: Json | null
+          attacker_ip?: string | null
+          created_at?: string
+          honeypot_id?: string | null
+          id?: string
+          intent_analysis?: string | null
+          redirected_to_sandbox?: boolean | null
+          sandbox_id?: string | null
+          technique_used?: string | null
+          timeline?: Json | null
+        }
+        Update: {
+          attacker_fingerprint?: Json | null
+          attacker_ip?: string | null
+          created_at?: string
+          honeypot_id?: string | null
+          id?: string
+          intent_analysis?: string | null
+          redirected_to_sandbox?: boolean | null
+          sandbox_id?: string | null
+          technique_used?: string | null
+          timeline?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "deception_telemetry_honeypot_id_fkey"
+            columns: ["honeypot_id"]
+            isOneToOne: false
+            referencedRelation: "honeypots"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      defense_actions: {
+        Row: {
+          action_type: string
+          auto_triggered: boolean | null
+          created_at: string
+          executed_at: string | null
+          id: string
+          organization_id: string | null
+          rolled_back_at: string | null
+          status: string | null
+          target_id: string | null
+          target_type: string
+          trigger_alert_id: string | null
+          trigger_reason: string | null
+        }
+        Insert: {
+          action_type: string
+          auto_triggered?: boolean | null
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          organization_id?: string | null
+          rolled_back_at?: string | null
+          status?: string | null
+          target_id?: string | null
+          target_type: string
+          trigger_alert_id?: string | null
+          trigger_reason?: string | null
+        }
+        Update: {
+          action_type?: string
+          auto_triggered?: boolean | null
+          created_at?: string
+          executed_at?: string | null
+          id?: string
+          organization_id?: string | null
+          rolled_back_at?: string | null
+          status?: string | null
+          target_id?: string | null
+          target_type?: string
+          trigger_alert_id?: string | null
+          trigger_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "defense_actions_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "defense_actions_trigger_alert_id_fkey"
+            columns: ["trigger_alert_id"]
+            isOneToOne: false
+            referencedRelation: "security_alerts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
@@ -105,6 +306,109 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "departments_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      digital_twin_simulations: {
+        Row: {
+          attack_scenario: Json | null
+          blast_radius: Json | null
+          completed_at: string | null
+          created_at: string
+          financial_impact_estimate: number | null
+          id: string
+          name: string
+          network_architecture: Json | null
+          organization_id: string | null
+          recommendations: Json | null
+          simulation_type: string
+          status: string | null
+        }
+        Insert: {
+          attack_scenario?: Json | null
+          blast_radius?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          financial_impact_estimate?: number | null
+          id?: string
+          name: string
+          network_architecture?: Json | null
+          organization_id?: string | null
+          recommendations?: Json | null
+          simulation_type: string
+          status?: string | null
+        }
+        Update: {
+          attack_scenario?: Json | null
+          blast_radius?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          financial_impact_estimate?: number | null
+          id?: string
+          name?: string
+          network_architecture?: Json | null
+          organization_id?: string | null
+          recommendations?: Json | null
+          simulation_type?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "digital_twin_simulations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      honeypots: {
+        Row: {
+          created_at: string
+          decoy_data: Json | null
+          id: string
+          interactions_count: number | null
+          is_active: boolean | null
+          last_interaction_at: string | null
+          name: string
+          organization_id: string | null
+          target_ip: string | null
+          type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decoy_data?: Json | null
+          id?: string
+          interactions_count?: number | null
+          is_active?: boolean | null
+          last_interaction_at?: string | null
+          name: string
+          organization_id?: string | null
+          target_ip?: string | null
+          type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decoy_data?: Json | null
+          id?: string
+          interactions_count?: number | null
+          is_active?: boolean | null
+          last_interaction_at?: string | null
+          name?: string
+          organization_id?: string | null
+          target_ip?: string | null
+          type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "honeypots_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -264,6 +568,63 @@ export type Database = {
           },
         ]
       }
+      predictive_risk_scores: {
+        Row: {
+          behavior_drift_score: number | null
+          breach_probability: number | null
+          created_at: string
+          department_id: string | null
+          id: string
+          insider_threat_probability: number | null
+          phishing_susceptibility: number | null
+          predicted_at: string
+          prediction_factors: Json | null
+          stress_indicators: Json | null
+          user_id: string | null
+        }
+        Insert: {
+          behavior_drift_score?: number | null
+          breach_probability?: number | null
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          insider_threat_probability?: number | null
+          phishing_susceptibility?: number | null
+          predicted_at?: string
+          prediction_factors?: Json | null
+          stress_indicators?: Json | null
+          user_id?: string | null
+        }
+        Update: {
+          behavior_drift_score?: number | null
+          breach_probability?: number | null
+          created_at?: string
+          department_id?: string | null
+          id?: string
+          insider_threat_probability?: number | null
+          phishing_susceptibility?: number | null
+          predicted_at?: string
+          prediction_factors?: Json | null
+          stress_indicators?: Json | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "predictive_risk_scores_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "predictive_risk_scores_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string
@@ -317,6 +678,59 @@ export type Database = {
           },
           {
             foreignKeyName: "profiles_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      red_team_tests: {
+        Row: {
+          attack_chain: Json | null
+          completed_at: string | null
+          created_at: string
+          id: string
+          organization_id: string | null
+          posture_score: number | null
+          results: Json | null
+          started_at: string | null
+          status: string | null
+          target_scope: Json | null
+          test_type: string
+          vulnerabilities_found: number | null
+        }
+        Insert: {
+          attack_chain?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          posture_score?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string | null
+          target_scope?: Json | null
+          test_type: string
+          vulnerabilities_found?: number | null
+        }
+        Update: {
+          attack_chain?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          organization_id?: string | null
+          posture_score?: number | null
+          results?: Json | null
+          started_at?: string | null
+          status?: string | null
+          target_scope?: Json | null
+          test_type?: string
+          vulnerabilities_found?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "red_team_tests_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
@@ -609,6 +1023,56 @@ export type Database = {
         }
         Relationships: []
       }
+      supply_chain_vendors: {
+        Row: {
+          auto_isolate_on_breach: boolean | null
+          created_at: string
+          id: string
+          integration_status: string | null
+          last_breach_date: string | null
+          organization_id: string | null
+          risk_score: number | null
+          updated_at: string
+          vendor_name: string
+          vendor_type: string | null
+          vulnerabilities: Json | null
+        }
+        Insert: {
+          auto_isolate_on_breach?: boolean | null
+          created_at?: string
+          id?: string
+          integration_status?: string | null
+          last_breach_date?: string | null
+          organization_id?: string | null
+          risk_score?: number | null
+          updated_at?: string
+          vendor_name: string
+          vendor_type?: string | null
+          vulnerabilities?: Json | null
+        }
+        Update: {
+          auto_isolate_on_breach?: boolean | null
+          created_at?: string
+          id?: string
+          integration_status?: string | null
+          last_breach_date?: string | null
+          organization_id?: string | null
+          risk_score?: number | null
+          updated_at?: string
+          vendor_name?: string
+          vendor_type?: string | null
+          vulnerabilities?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "supply_chain_vendors_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       threat_enrichment: {
         Row: {
           created_at: string
@@ -851,6 +1315,59 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      zero_trust_access: {
+        Row: {
+          access_level: string
+          actual_usage_frequency: number | null
+          created_at: string
+          id: string
+          is_least_privilege: boolean | null
+          last_accessed_at: string | null
+          recommendations: Json | null
+          resource_id: string
+          resource_type: string
+          risk_score: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          access_level: string
+          actual_usage_frequency?: number | null
+          created_at?: string
+          id?: string
+          is_least_privilege?: boolean | null
+          last_accessed_at?: string | null
+          recommendations?: Json | null
+          resource_id: string
+          resource_type: string
+          risk_score?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          access_level?: string
+          actual_usage_frequency?: number | null
+          created_at?: string
+          id?: string
+          is_least_privilege?: boolean | null
+          last_accessed_at?: string | null
+          recommendations?: Json | null
+          resource_id?: string
+          resource_type?: string
+          risk_score?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "zero_trust_access_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
     }
     Views: {
