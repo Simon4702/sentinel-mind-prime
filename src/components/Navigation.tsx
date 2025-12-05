@@ -11,6 +11,7 @@ import {
   Settings,
   BarChart3,
   TrendingUp,
+  Zap,
 } from "lucide-react";
 
 const navItems = [
@@ -61,6 +62,12 @@ const navItems = [
     path: "/executive",
     icon: TrendingUp,
     roles: ["admin"],
+  },
+  {
+    name: "Advanced Security",
+    path: "/advanced-security",
+    icon: Zap,
+    roles: ["admin", "security_analyst"],
   },
   {
     name: "Admin Panel",
