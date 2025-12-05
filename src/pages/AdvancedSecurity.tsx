@@ -1,5 +1,5 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import Layout from "@/components/Layout";
+import { Layout } from "@/components/Layout";
 import BehavioralDeceptionGrid from "@/components/BehavioralDeceptionGrid";
 import PredictiveCompromiseEngine from "@/components/PredictiveCompromiseEngine";
 import AdaptiveDefenseOrchestration from "@/components/AdaptiveDefenseOrchestration";
