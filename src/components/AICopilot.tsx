@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
   Bot, 
@@ -18,7 +17,6 @@ import {
   CheckCircle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
 
 interface Message {
   role: "user" | "assistant";
@@ -33,12 +31,14 @@ const quickActions = [
   { label: "Generate executive report", icon: Shield },
 ];
 
+const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilot`;
+
 export const AICopilot = () => {
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your Security AI Copilot. I can help you analyze incidents, explain threats in plain language, suggest investigation steps, and generate reports. How can I assist you today?",
+      content: "Hello! I'm your Security AI Copilot powered by advanced AI. I can help you analyze incidents, explain threats in plain language, suggest investigation steps, and generate reports. How can I assist you today?",
       timestamp: new Date(),
     }
   ]);
@@ -52,6 +52,105 @@ export const AICopilot = () => {
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+  const streamChat = async (userMessages: { role: string; content: string }[]) => {
+    const resp = await fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ messages: userMessages }),
+    });
+
+    if (!resp.ok) {
+      const errorData = await resp.json().catch(() => ({}));
+      if (resp.status === 429) {
+        throw new Error("Rate limit exceeded. Please try again in a moment.");
+      }
+      if (resp.status === 402) {
+        throw new Error("AI credits exhausted. Please add credits to continue.");
+      }
+      throw new Error(errorData.error || "Failed to get AI response");
+    }
+
+    if (!resp.body) throw new Error("No response body");
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = "";
+    let assistantContent = "";
+
+    // Add empty assistant message
+    setMessages(prev => [...prev, { role: "assistant", content: "", timestamp: new Date() }]);
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf("\n")) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
+
+        if (line.endsWith("\r")) line = line.slice(0, -1);
+        if (line.startsWith(":") || line.trim() === "") continue;
+        if (!line.startsWith("data: ")) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === "[DONE]") break;
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            assistantContent += content;
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage?.role === "assistant") {
+                lastMessage.content = assistantContent;
+              }
+              return newMessages;
+            });
+          }
+        } catch {
+          textBuffer = line + "\n" + textBuffer;
+          break;
+        }
+      }
+    }
+
+    // Final flush
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split("\n")) {
+        if (!raw) continue;
+        if (raw.endsWith("\r")) raw = raw.slice(0, -1);
+        if (raw.startsWith(":") || raw.trim() === "") continue;
+        if (!raw.startsWith("data: ")) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === "[DONE]") continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            assistantContent += content;
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastMessage = newMessages[newMessages.length - 1];
+              if (lastMessage?.role === "assistant") {
+                lastMessage.content = assistantContent;
+              }
+              return newMessages;
+            });
+          }
+        } catch { /* ignore */ }
+      }
+    }
+
+    return assistantContent;
+  };
 
   const sendMessage = async (messageText: string) => {
     if (!messageText.trim() || isLoading) return;
@@ -67,56 +166,27 @@ export const AICopilot = () => {
     setIsLoading(true);
 
     try {
-      const response = await supabase.functions.invoke('ai-copilot', {
-        body: { 
-          messages: [...messages, userMessage].map(m => ({ role: m.role, content: m.content }))
-        }
-      });
-
-      if (response.error) throw response.error;
-
-      const assistantMessage: Message = {
-        role: "assistant",
-        content: response.data.content || "I apologize, but I encountered an issue processing your request. Please try again.",
-        timestamp: new Date(),
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      const chatMessages = [...messages, userMessage].map(m => ({ role: m.role, content: m.content }));
+      await streamChat(chatMessages);
     } catch (error) {
       console.error('AI Copilot error:', error);
+      toast({
+        title: "AI Error",
+        description: error instanceof Error ? error.message : "Failed to get AI response",
+        variant: "destructive",
+      });
       
-      // Fallback response for demo purposes
-      const fallbackMessage: Message = {
-        role: "assistant",
-        content: generateFallbackResponse(messageText),
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, fallbackMessage]);
+      // Remove the empty assistant message if streaming failed
+      setMessages(prev => {
+        const lastMessage = prev[prev.length - 1];
+        if (lastMessage?.role === "assistant" && !lastMessage.content) {
+          return prev.slice(0, -1);
+        }
+        return prev;
+      });
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const generateFallbackResponse = (query: string): string => {
-    const lowerQuery = query.toLowerCase();
-    
-    if (lowerQuery.includes("incident") || lowerQuery.includes("summarize")) {
-      return `**Today's Incident Summary**\n\n📊 **Overview:**\n- Total incidents: 12\n- Critical: 2\n- High: 4\n- Medium: 6\n\n🔴 **Critical Issues:**\n1. **Unauthorized access attempt** detected on Finance DB at 14:32\n   - Status: Under investigation\n   - Recommended: Isolate affected system\n\n2. **Potential data exfiltration** flagged by DLP\n   - Status: Contained\n   - Recommended: Review access logs\n\n💡 **Recommendation:** Focus on the two critical incidents first. Would you like me to provide detailed investigation steps for either?`;
-    }
-    
-    if (lowerQuery.includes("threat") || lowerQuery.includes("severity")) {
-      return `**Threat Severity Levels Explained**\n\n🔴 **Critical (Score 90-100)**\n- Immediate business impact\n- Active data breach or system compromise\n- Requires immediate response (< 15 mins)\n\n🟠 **High (Score 70-89)**\n- Significant risk to operations\n- Confirmed malicious activity\n- Response within 1 hour\n\n🟡 **Medium (Score 40-69)**\n- Potential threat requiring investigation\n- Suspicious but unconfirmed activity\n- Response within 4 hours\n\n🟢 **Low (Score 0-39)**\n- Minor policy violations\n- Informational alerts\n- Response within 24 hours`;
-    }
-    
-    if (lowerQuery.includes("investigate") || lowerQuery.includes("steps")) {
-      return `**Investigation Workflow**\n\n1. **Initial Triage** (5 mins)\n   - Verify alert is not a false positive\n   - Check affected systems/users\n   - Assess blast radius\n\n2. **Evidence Collection** (15 mins)\n   - Capture logs and screenshots\n   - Document timeline of events\n   - Identify IOCs (Indicators of Compromise)\n\n3. **Containment** (As needed)\n   - Isolate affected systems\n   - Block malicious IPs/domains\n   - Revoke compromised credentials\n\n4. **Root Cause Analysis**\n   - Identify attack vector\n   - Map attacker's path\n   - Assess data impact\n\n5. **Remediation & Recovery**\n   - Patch vulnerabilities\n   - Restore from backups if needed\n   - Monitor for reoccurrence`;
-    }
-    
-    if (lowerQuery.includes("report") || lowerQuery.includes("executive")) {
-      return `**Executive Security Report - ${new Date().toLocaleDateString()}**\n\n📈 **Security Posture Score: 78/100** (↑3 from last week)\n\n**Key Metrics:**\n- Incidents resolved: 45/52 (87%)\n- Mean time to detect: 12 minutes\n- Mean time to respond: 28 minutes\n- Phishing simulation success: 92% reported\n\n**Notable Events:**\n- Blocked 1,247 malicious emails\n- Prevented 3 potential data breaches\n- Completed quarterly access review\n\n**Recommendations:**\n1. Increase security training for Finance dept\n2. Implement additional MFA for admin accounts\n3. Update endpoint protection policies\n\n*This report was auto-generated by SentinelMind AI*`;
-    }
-    
-    return `I understand you're asking about "${query}". As your Security AI Copilot, I can help with:\n\n• **Incident Analysis** - Summarize and explain security events\n• **Threat Intelligence** - Explain threats in plain language\n• **Investigation Support** - Suggest next steps and actions\n• **Report Generation** - Create executive summaries\n\nCould you provide more details about what you'd like me to help with?`;
   };
 
   const copyToClipboard = (text: string, index: number) => {
@@ -163,7 +233,7 @@ export const AICopilot = () => {
                           <span className="text-xs text-muted-foreground">
                             {message.timestamp.toLocaleTimeString()}
                           </span>
-                          {message.role === "assistant" && (
+                          {message.role === "assistant" && message.content && (
                             <Button
                               variant="ghost"
                               size="sm"
@@ -186,7 +256,7 @@ export const AICopilot = () => {
                       )}
                     </div>
                   ))}
-                  {isLoading && (
+                  {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                     <div className="flex gap-3">
                       <div className="p-2 rounded-full bg-blue-500/20 h-fit">
                         <Bot className="h-4 w-4 text-blue-400" />
@@ -280,10 +350,10 @@ export const AICopilot = () => {
             <CardContent className="p-4">
               <div className="flex items-center gap-2 mb-2">
                 <Shield className="h-4 w-4 text-blue-400" />
-                <span className="font-medium text-sm">Privacy Note</span>
+                <span className="font-medium text-sm">AI Powered</span>
               </div>
               <p className="text-xs text-muted-foreground">
-                All conversations are processed securely. Your data never leaves your environment.
+                Powered by advanced AI for real-time security analysis and insights.
               </p>
             </CardContent>
           </Card>

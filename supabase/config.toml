@@ -2,3 +2,6 @@ project_id = "pboadzdcadtvuqzigysv"
 
 [functions.email-monitor]
 verify_jwt = false
+
+[functions.ai-copilot]
+verify_jwt = false
