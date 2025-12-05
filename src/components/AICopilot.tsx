@@ -31,7 +31,7 @@ const quickActions = [
   { label: "Generate executive report", icon: Shield },
 ];
 
-const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-copilot`;
+const CHAT_URL = "https://pboadzdcadtvuqzigysv.supabase.co/functions/v1/ai-copilot";
 
 export const AICopilot = () => {
   const { toast } = useToast();
@@ -58,7 +58,7 @@ export const AICopilot = () => {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBib2FkemRjYWR0dnVxemlneXN2Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTc1NzI2NTEsImV4cCI6MjA3MzE0ODY1MX0.vYijJKR4f0uAhS1PAtq4GJNp2TqfWoUC_TWEFJq4vlo",
       },
       body: JSON.stringify({ messages: userMessages }),
     });
