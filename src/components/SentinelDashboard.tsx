@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Shield, 
   TrendingUp, 
@@ -13,9 +14,10 @@ import {
   Zap,
   BarChart3,
   Activity,
-  LogOut
+  Radio
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { useRealtimeThreats } from "@/hooks/useRealtimeThreats";
 import { Link } from "react-router-dom";
 import heroCyber from "@/assets/hero-cyber.jpg";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
@@ -23,7 +25,16 @@ import { Navigation } from "@/components/Navigation";
 
 export const SentinelDashboard = () => {
   const { profile, signOut } = useAuth();
+  const { threats, incidents, alerts, stats, loading } = useRealtimeThreats();
 
+  const getThreatLevel = () => {
+    if (stats.criticalThreats > 0) return { level: "CRITICAL", color: "text-destructive", icon: AlertTriangle };
+    if (stats.openIncidents > 3) return { level: "HIGH", color: "text-warning", icon: AlertTriangle };
+    if (stats.activeThreats > 5) return { level: "MEDIUM", color: "text-warning", icon: Shield };
+    return { level: "LOW", color: "text-success", icon: Shield };
+  };
+
+  const threatLevel = getThreatLevel();
   return (
     <div className="min-h-screen bg-background relative overflow-hidden">
       {/* Cyber Shield Background */}
@@ -130,109 +141,137 @@ export const SentinelDashboard = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
             <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Threat Level</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Shield className="h-5 w-5 text-success" />
-                  <span className="text-2xl font-bold text-success">LOW</span>
-                </div>
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  Threat Level
+                  <Radio className="h-3 w-3 text-success animate-pulse" />
+                </CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <threatLevel.icon className={`h-5 w-5 ${threatLevel.color}`} />
+                    <span className={`text-2xl font-bold ${threatLevel.color}`}>{threatLevel.level}</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
-                <Badge variant="outline" className="border-success/20 text-success">
-                  All Systems Secure
+                <Badge variant="outline" className={`border-${threatLevel.color.replace('text-', '')}/20 ${threatLevel.color}`}>
+                  {stats.activeThreats} Active Threats
                 </Badge>
               </CardContent>
             </Card>
 
             <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Active Users</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <span className="text-2xl font-bold">1,247</span>
-                </div>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Open Incidents</CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    <span className="text-2xl font-bold">{stats.openIncidents}</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-success" />
-                  <span className="text-sm text-success">+12% from last week</span>
+                  <Activity className="h-4 w-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">Real-time monitoring</span>
                 </div>
               </CardContent>
             </Card>
 
             <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Phishing Attempts</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Target className="h-5 w-5 text-warning" />
-                  <span className="text-2xl font-bold">23</span>
-                </div>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Unresolved Alerts</CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-warning" />
+                    <span className="text-2xl font-bold">{stats.unresolvedAlerts}</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
                 <Badge variant="outline" className="border-warning/20 text-warning">
-                  24h Detection
+                  Requires Attention
                 </Badge>
               </CardContent>
             </Card>
 
             <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Defense Score</CardTitle>
-                <div className="flex items-center gap-2">
-                  <Brain className="h-5 w-5 text-accent" />
-                  <span className="text-2xl font-bold">94%</span>
-                </div>
+                <CardTitle className="text-sm font-medium text-muted-foreground">Critical Threats</CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-destructive" />
+                    <span className="text-2xl font-bold">{stats.criticalThreats}</span>
+                  </div>
+                )}
               </CardHeader>
               <CardContent>
-                <Progress value={94} className="h-2" />
+                <Progress value={stats.criticalThreats === 0 ? 100 : Math.max(0, 100 - stats.criticalThreats * 10)} className="h-2" />
               </CardContent>
             </Card>
           </div>
 
           {/* Main Content Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
-            {/* Behavioral Risk Monitor */}
+            {/* Recent Threats */}
             <Card className="lg:col-span-2 border-primary/20 bg-gradient-cyber shadow-elegant">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Activity className="h-5 w-5 text-primary" />
-                  Behavioral Risk Monitor
+                  Recent Threat Intelligence
+                  <Radio className="h-3 w-3 text-success animate-pulse ml-auto" />
                 </CardTitle>
-                <CardDescription>Real-time user behavior analysis and threat detection</CardDescription>
+                <CardDescription>Real-time threat detection feed</CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-success/20">
-                    <div>
-                      <p className="font-medium">Sarah Chen - Marketing</p>
-                      <p className="text-sm text-muted-foreground">Normal login pattern detected</p>
+                  {loading ? (
+                    <>
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                    </>
+                  ) : threats.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Shield className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No active threats detected</p>
                     </div>
-                    <Badge variant="outline" className="border-success/20 text-success">
-                      <Shield className="mr-1 h-3 w-3" />
-                      Safe
-                    </Badge>
-                  </div>
-                  
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-warning/20">
-                    <div>
-                      <p className="font-medium">Mike Rodriguez - Finance</p>
-                      <p className="text-sm text-muted-foreground">Unusual file access pattern</p>
-                    </div>
-                    <Badge variant="outline" className="border-warning/20 text-warning">
-                      <AlertTriangle className="mr-1 h-3 w-3" />
-                      Monitor
-                    </Badge>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border border-primary/20">
-                    <div>
-                      <p className="font-medium">Alex Thompson - IT</p>
-                      <p className="text-sm text-muted-foreground">Elevated privileges detected</p>
-                    </div>
-                    <Badge variant="outline" className="border-primary/20 text-primary">
-                      <Eye className="mr-1 h-3 w-3" />
-                      Review
-                    </Badge>
-                  </div>
+                  ) : (
+                    threats.slice(0, 5).map((threat) => (
+                      <div 
+                        key={threat.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg bg-muted/50 border ${
+                          threat.severity === 'critical' ? 'border-destructive/40' :
+                          threat.severity === 'high' ? 'border-warning/40' :
+                          'border-primary/20'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium">{threat.threat_type}</p>
+                          <p className="text-sm text-muted-foreground truncate max-w-xs">
+                            {threat.indicator_type}: {threat.indicator_value}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            threat.severity === 'critical' ? 'border-destructive/40 text-destructive' :
+                            threat.severity === 'high' ? 'border-warning/40 text-warning' :
+                            'border-primary/40 text-primary'
+                          }
+                        >
+                          {threat.severity}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
                 </div>
               </CardContent>
             </Card>
