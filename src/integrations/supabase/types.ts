@@ -14,6 +14,78 @@ export type Database = {
   }
   public: {
     Tables: {
+      adaptive_defense_rules: {
+        Row: {
+          actions: Json
+          created_at: string
+          description: string | null
+          effectiveness_score: number | null
+          id: string
+          is_auto_generated: boolean | null
+          is_enabled: boolean | null
+          last_triggered_at: string | null
+          organization_id: string | null
+          priority: number | null
+          rule_name: string
+          rule_type: string
+          source_pattern_id: string | null
+          times_triggered: number | null
+          trigger_conditions: Json
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json
+          created_at?: string
+          description?: string | null
+          effectiveness_score?: number | null
+          id?: string
+          is_auto_generated?: boolean | null
+          is_enabled?: boolean | null
+          last_triggered_at?: string | null
+          organization_id?: string | null
+          priority?: number | null
+          rule_name: string
+          rule_type: string
+          source_pattern_id?: string | null
+          times_triggered?: number | null
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json
+          created_at?: string
+          description?: string | null
+          effectiveness_score?: number | null
+          id?: string
+          is_auto_generated?: boolean | null
+          is_enabled?: boolean | null
+          last_triggered_at?: string | null
+          organization_id?: string | null
+          priority?: number | null
+          rule_name?: string
+          rule_type?: string
+          source_pattern_id?: string | null
+          times_triggered?: number | null
+          trigger_conditions?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "adaptive_defense_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "adaptive_defense_rules_source_pattern_id_fkey"
+            columns: ["source_pattern_id"]
+            isOneToOne: false
+            referencedRelation: "learned_attack_patterns"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
@@ -275,6 +347,59 @@ export type Database = {
           },
         ]
       }
+      defense_learning_events: {
+        Row: {
+          analysis_result: Json | null
+          created_at: string
+          error_message: string | null
+          event_type: string
+          id: string
+          organization_id: string | null
+          patterns_identified: number | null
+          processing_time_ms: number | null
+          rules_generated: number | null
+          rules_updated: number | null
+          source_data: Json
+          status: string | null
+        }
+        Insert: {
+          analysis_result?: Json | null
+          created_at?: string
+          error_message?: string | null
+          event_type: string
+          id?: string
+          organization_id?: string | null
+          patterns_identified?: number | null
+          processing_time_ms?: number | null
+          rules_generated?: number | null
+          rules_updated?: number | null
+          source_data?: Json
+          status?: string | null
+        }
+        Update: {
+          analysis_result?: Json | null
+          created_at?: string
+          error_message?: string | null
+          event_type?: string
+          id?: string
+          organization_id?: string | null
+          patterns_identified?: number | null
+          processing_time_ms?: number | null
+          rules_generated?: number | null
+          rules_updated?: number | null
+          source_data?: Json
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "defense_learning_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       departments: {
         Row: {
           created_at: string
@@ -409,6 +534,68 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "honeypots_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      learned_attack_patterns: {
+        Row: {
+          attack_type: string
+          confidence_score: number | null
+          countermeasures: Json
+          created_at: string
+          detection_rules: Json
+          first_seen_at: string
+          id: string
+          indicators: Json
+          is_active: boolean | null
+          last_seen_at: string
+          learned_from_incidents: string[] | null
+          organization_id: string | null
+          pattern_name: string
+          times_detected: number | null
+          updated_at: string
+        }
+        Insert: {
+          attack_type: string
+          confidence_score?: number | null
+          countermeasures?: Json
+          created_at?: string
+          detection_rules?: Json
+          first_seen_at?: string
+          id?: string
+          indicators?: Json
+          is_active?: boolean | null
+          last_seen_at?: string
+          learned_from_incidents?: string[] | null
+          organization_id?: string | null
+          pattern_name: string
+          times_detected?: number | null
+          updated_at?: string
+        }
+        Update: {
+          attack_type?: string
+          confidence_score?: number | null
+          countermeasures?: Json
+          created_at?: string
+          detection_rules?: Json
+          first_seen_at?: string
+          id?: string
+          indicators?: Json
+          is_active?: boolean | null
+          last_seen_at?: string
+          learned_from_incidents?: string[] | null
+          organization_id?: string | null
+          pattern_name?: string
+          times_detected?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "learned_attack_patterns_organization_id_fkey"
             columns: ["organization_id"]
             isOneToOne: false
             referencedRelation: "organizations"
