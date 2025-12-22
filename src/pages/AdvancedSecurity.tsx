@@ -13,6 +13,7 @@ import QuantumSecurity from "@/components/QuantumSecurity";
 import AICopilot from "@/components/AICopilot";
 import HumanRiskBiometrics from "@/components/HumanRiskBiometrics";
 import AutonomousSOC from "@/components/AutonomousSOC";
+import AdaptiveLearningSystem from "@/components/AdaptiveLearningSystem";
 
 const AdvancedSecurity = () => {
   return (
@@ -23,8 +24,9 @@ const AdvancedSecurity = () => {
           <p className="text-muted-foreground">Enterprise-grade security features</p>
         </div>
 
-        <Tabs defaultValue="deception" className="space-y-4">
+        <Tabs defaultValue="adaptive" className="space-y-4">
           <TabsList className="flex flex-wrap h-auto gap-1 bg-card p-1">
+            <TabsTrigger value="adaptive" className="text-xs">Adaptive Learning</TabsTrigger>
             <TabsTrigger value="deception" className="text-xs">Deception Grid</TabsTrigger>
             <TabsTrigger value="predictive" className="text-xs">Predictive Engine</TabsTrigger>
             <TabsTrigger value="defense" className="text-xs">Auto Defense</TabsTrigger>
@@ -40,6 +42,7 @@ const AdvancedSecurity = () => {
             <TabsTrigger value="quantum" className="text-xs">Quantum Security</TabsTrigger>
           </TabsList>
 
+          <TabsContent value="adaptive"><AdaptiveLearningSystem /></TabsContent>
           <TabsContent value="deception"><BehavioralDeceptionGrid /></TabsContent>
           <TabsContent value="predictive"><PredictiveCompromiseEngine /></TabsContent>
           <TabsContent value="defense"><AdaptiveDefenseOrchestration /></TabsContent>
