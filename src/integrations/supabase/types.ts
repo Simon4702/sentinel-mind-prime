@@ -1210,6 +1210,303 @@ export type Database = {
         }
         Relationships: []
       }
+      siem_agent_groups: {
+        Row: {
+          agent_count: number | null
+          color: string | null
+          created_at: string
+          description: string | null
+          group_name: string
+          icon: string | null
+          id: string
+          organization_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_count?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          group_name: string
+          icon?: string | null
+          id?: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_count?: number | null
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          group_name?: string
+          icon?: string | null
+          id?: string
+          organization_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "siem_agent_groups_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      siem_agents: {
+        Row: {
+          agent_name: string
+          agent_type: string
+          agent_version: string | null
+          alerts_generated: number | null
+          config: Json | null
+          cpu_usage: number | null
+          created_at: string
+          disk_usage: number | null
+          events_collected: number | null
+          hostname: string
+          id: string
+          installed_at: string | null
+          ip_address: string | null
+          last_event_at: string | null
+          last_heartbeat_at: string | null
+          location: Json | null
+          memory_usage: number | null
+          network_bytes_in: number | null
+          network_bytes_out: number | null
+          organization_id: string | null
+          os_type: string | null
+          os_version: string | null
+          status: string
+          tags: string[] | null
+          updated_at: string
+        }
+        Insert: {
+          agent_name: string
+          agent_type?: string
+          agent_version?: string | null
+          alerts_generated?: number | null
+          config?: Json | null
+          cpu_usage?: number | null
+          created_at?: string
+          disk_usage?: number | null
+          events_collected?: number | null
+          hostname: string
+          id?: string
+          installed_at?: string | null
+          ip_address?: string | null
+          last_event_at?: string | null
+          last_heartbeat_at?: string | null
+          location?: Json | null
+          memory_usage?: number | null
+          network_bytes_in?: number | null
+          network_bytes_out?: number | null
+          organization_id?: string | null
+          os_type?: string | null
+          os_version?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Update: {
+          agent_name?: string
+          agent_type?: string
+          agent_version?: string | null
+          alerts_generated?: number | null
+          config?: Json | null
+          cpu_usage?: number | null
+          created_at?: string
+          disk_usage?: number | null
+          events_collected?: number | null
+          hostname?: string
+          id?: string
+          installed_at?: string | null
+          ip_address?: string | null
+          last_event_at?: string | null
+          last_heartbeat_at?: string | null
+          location?: Json | null
+          memory_usage?: number | null
+          network_bytes_in?: number | null
+          network_bytes_out?: number | null
+          organization_id?: string | null
+          os_type?: string | null
+          os_version?: string | null
+          status?: string
+          tags?: string[] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "siem_agents_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      siem_correlation_rules: {
+        Row: {
+          actions: Json | null
+          conditions: Json
+          created_at: string
+          description: string | null
+          id: string
+          is_enabled: boolean | null
+          last_triggered_at: string | null
+          organization_id: string | null
+          rule_name: string
+          severity: string | null
+          times_triggered: number | null
+          updated_at: string
+        }
+        Insert: {
+          actions?: Json | null
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_triggered_at?: string | null
+          organization_id?: string | null
+          rule_name: string
+          severity?: string | null
+          times_triggered?: number | null
+          updated_at?: string
+        }
+        Update: {
+          actions?: Json | null
+          conditions?: Json
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean | null
+          last_triggered_at?: string | null
+          organization_id?: string | null
+          rule_name?: string
+          severity?: string | null
+          times_triggered?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "siem_correlation_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      siem_events: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          agent_id: string | null
+          category: string | null
+          correlation_id: string | null
+          created_at: string
+          destination_ip: string | null
+          destination_port: number | null
+          event_type: string
+          file_path: string | null
+          hash: string | null
+          id: string
+          is_acknowledged: boolean | null
+          is_alert: boolean | null
+          message: string
+          mitre_tactic: string | null
+          mitre_technique: string | null
+          organization_id: string | null
+          parsed_data: Json | null
+          process_name: string | null
+          protocol: string | null
+          raw_log: string | null
+          severity: string
+          source: string
+          source_ip: string | null
+          source_port: number | null
+          timestamp: string
+          user_name: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          agent_id?: string | null
+          category?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          destination_ip?: string | null
+          destination_port?: number | null
+          event_type: string
+          file_path?: string | null
+          hash?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_alert?: boolean | null
+          message: string
+          mitre_tactic?: string | null
+          mitre_technique?: string | null
+          organization_id?: string | null
+          parsed_data?: Json | null
+          process_name?: string | null
+          protocol?: string | null
+          raw_log?: string | null
+          severity?: string
+          source: string
+          source_ip?: string | null
+          source_port?: number | null
+          timestamp?: string
+          user_name?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          agent_id?: string | null
+          category?: string | null
+          correlation_id?: string | null
+          created_at?: string
+          destination_ip?: string | null
+          destination_port?: number | null
+          event_type?: string
+          file_path?: string | null
+          hash?: string | null
+          id?: string
+          is_acknowledged?: boolean | null
+          is_alert?: boolean | null
+          message?: string
+          mitre_tactic?: string | null
+          mitre_technique?: string | null
+          organization_id?: string | null
+          parsed_data?: Json | null
+          process_name?: string | null
+          protocol?: string | null
+          raw_log?: string | null
+          severity?: string
+          source?: string
+          source_ip?: string | null
+          source_port?: number | null
+          timestamp?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "siem_events_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "siem_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "siem_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       supply_chain_vendors: {
         Row: {
           auto_isolate_on_breach: boolean | null

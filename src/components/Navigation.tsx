@@ -70,6 +70,12 @@ const navItems = [
     roles: ["admin", "security_analyst"],
   },
   {
+    name: "SIEM",
+    path: "/siem",
+    icon: Server,
+    roles: ["admin", "security_analyst"],
+  },
+  {
     name: "Admin Panel",
     path: "/admin",
     icon: Settings,
@@ -113,4 +119,4 @@ export const Navigation = () => {
       </div>
     </nav>
   );
-};
+} from "lucide-react";
