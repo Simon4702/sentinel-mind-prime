@@ -29,6 +29,7 @@ import { AgentGrid } from "./AgentGrid";
 import { EventsStream } from "./EventsStream";
 import { SIEMAnalytics } from "./SIEMAnalytics";
 import { AgentDeployModal } from "./AgentDeployModal";
+import { CorrelationRules } from "./CorrelationRules";
 
 interface AgentStats {
   total: number;
@@ -253,6 +254,10 @@ export const SIEMDashboard = () => {
             <Activity className="h-4 w-4 mr-2" />
             Live Events
           </TabsTrigger>
+          <TabsTrigger value="correlation" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
+            <Shield className="h-4 w-4 mr-2" />
+            Correlation Rules
+          </TabsTrigger>
           <TabsTrigger value="analytics" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
             <BarChart3 className="h-4 w-4 mr-2" />
             Analytics
@@ -276,6 +281,10 @@ export const SIEMDashboard = () => {
 
         <TabsContent value="events">
           <EventsStream />
+        </TabsContent>
+
+        <TabsContent value="correlation">
+          <CorrelationRules />
         </TabsContent>
 
         <TabsContent value="analytics">
