@@ -12,6 +12,7 @@ import {
   BarChart3,
   TrendingUp,
   Zap,
+  Server,
 } from "lucide-react";
 
 const navItems = [
@@ -119,4 +120,4 @@ export const Navigation = () => {
       </div>
     </nav>
   );
-} from "lucide-react";
+};
