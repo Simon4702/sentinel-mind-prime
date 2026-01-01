@@ -14,19 +14,91 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { action, organizationId } = await req.json();
-    
+    // Verify authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - No authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
     if (!LOVABLE_API_KEY) {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    // Create client with user's token to verify auth
+    const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
 
-    console.log(`Adaptive Learning - Action: ${action}, Org: ${organizationId}`);
+    // Verify the user's token
+    const { data: { user }, error: authError } = await userClient.auth.getUser();
+    if (authError || !user) {
+      console.error("Authentication failed:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`Authenticated user: ${user.id}`);
+
+    // Get user's profile and verify organization access
+    const { data: profile, error: profileError } = await userClient
+      .from("profiles")
+      .select("organization_id, role")
+      .eq("user_id", user.id)
+      .single();
+
+    if (profileError || !profile) {
+      console.error("Profile lookup failed:", profileError?.message);
+      return new Response(
+        JSON.stringify({ error: "Forbidden - User profile not found" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // Verify user has security analyst or admin role
+    const { data: userRole } = await userClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .in("role", ["admin", "security_analyst"])
+      .limit(1)
+      .single();
+
+    if (!userRole) {
+      console.error("User does not have required role");
+      return new Response(
+        JSON.stringify({ error: "Forbidden - Security analyst or admin role required" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { action, organizationId } = await req.json();
+
+    // Verify the requested organization matches user's organization
+    if (organizationId && organizationId !== profile.organization_id) {
+      console.error(`Organization mismatch: requested ${organizationId}, user belongs to ${profile.organization_id}`);
+      return new Response(
+        JSON.stringify({ error: "Forbidden - Cannot access other organization's data" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const orgId = organizationId || profile.organization_id;
+
+    // Use service role for database operations (with verified user context)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    console.log(`Adaptive Learning - Action: ${action}, Org: ${orgId}, User: ${user.id}`);
 
     if (action === "analyze_and_learn") {
       // Fetch recent security incidents, alerts, and threat intelligence
@@ -34,19 +106,20 @@ serve(async (req) => {
         supabase
           .from("security_incidents")
           .select("*")
-          .eq("organization_id", organizationId)
+          .eq("organization_id", orgId)
           .order("detected_at", { ascending: false })
           .limit(50),
         supabase
           .from("security_alerts")
           .select("*")
-          .eq("organization_id", organizationId)
+          .eq("organization_id", orgId)
           .order("created_at", { ascending: false })
           .limit(50),
         supabase
           .from("threat_intelligence")
           .select("*")
           .eq("is_active", true)
+          .or(`organization_id.eq.${orgId},organization_id.is.null`)
           .limit(50),
       ]);
 
@@ -145,7 +218,7 @@ Focus on actionable, specific patterns and rules based on the actual data provid
 
       for (const pattern of analysis.patterns || []) {
         const { error } = await supabase.from("learned_attack_patterns").insert({
-          organization_id: organizationId,
+          organization_id: orgId,
           pattern_name: pattern.pattern_name,
           attack_type: pattern.attack_type,
           indicators: pattern.indicators || [],
@@ -161,7 +234,7 @@ Focus on actionable, specific patterns and rules based on the actual data provid
       // Store adaptive defense rules
       for (const rule of analysis.defense_rules || []) {
         const { error } = await supabase.from("adaptive_defense_rules").insert({
-          organization_id: organizationId,
+          organization_id: orgId,
           rule_name: rule.rule_name,
           rule_type: rule.rule_type,
           description: rule.description,
@@ -177,12 +250,13 @@ Focus on actionable, specific patterns and rules based on the actual data provid
       // Log the learning event
       const processingTime = Date.now() - startTime;
       await supabase.from("defense_learning_events").insert({
-        organization_id: organizationId,
+        organization_id: orgId,
         event_type: "full_analysis",
         source_data: {
           incidents_analyzed: incidents.length,
           alerts_analyzed: alerts.length,
           threats_analyzed: threats.length,
+          triggered_by_user: user.id,
         },
         analysis_result: analysis,
         patterns_identified: patternsCreated,
@@ -209,17 +283,17 @@ Focus on actionable, specific patterns and rules based on the actual data provid
         supabase
           .from("learned_attack_patterns")
           .select("*", { count: "exact" })
-          .eq("organization_id", organizationId)
+          .eq("organization_id", orgId)
           .eq("is_active", true),
         supabase
           .from("adaptive_defense_rules")
           .select("*", { count: "exact" })
-          .eq("organization_id", organizationId)
+          .eq("organization_id", orgId)
           .eq("is_enabled", true),
         supabase
           .from("defense_learning_events")
           .select("*")
-          .eq("organization_id", organizationId)
+          .eq("organization_id", orgId)
           .order("created_at", { ascending: false })
           .limit(10),
       ]);
