@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,7 +12,18 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, type } = await req.json();
+    // Verify authentication
+    const authHeader = req.headers.get("authorization");
+    if (!authHeader) {
+      console.error("No authorization header provided");
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - No authorization header" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -19,7 +31,41 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    console.log(`AI Copilot request - type: ${type}, messages: ${messages.length}`);
+    // Create client with user's token to verify auth
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } }
+    });
+
+    // Verify the user's token
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      console.error("Authentication failed:", authError?.message);
+      return new Response(
+        JSON.stringify({ error: "Unauthorized - Invalid token" }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    console.log(`AI Copilot authenticated user: ${user.id}`);
+
+    // Get user's profile for context
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("organization_id, role, full_name")
+      .eq("user_id", user.id)
+      .single();
+
+    if (!profile) {
+      console.error("Profile not found for user:", user.id);
+      return new Response(
+        JSON.stringify({ error: "Forbidden - User profile not found" }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    const { messages, type } = await req.json();
+
+    console.log(`AI Copilot request - type: ${type}, messages: ${messages.length}, user: ${user.id}`);
 
     const systemPrompt = `You are SentinelMind AI Copilot, an advanced cybersecurity AI assistant for security analysts. You help with:
 
@@ -29,6 +75,7 @@ serve(async (req) => {
 4. **Report Generation**: Create executive summaries and technical reports
 5. **Plain Language Explanations**: Convert complex security data into understandable insights
 
+You are assisting ${profile.full_name || 'a security analyst'} from organization ${profile.organization_id}.
 You have access to the organization's security data context. Be concise, actionable, and security-focused.
 When analyzing incidents, consider:
 - Attack vectors and techniques (MITRE ATT&CK framework)

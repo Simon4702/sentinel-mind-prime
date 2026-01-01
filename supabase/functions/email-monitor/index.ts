@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-organization-id, x-webhook-secret',
 };
 
 interface EmailData {
@@ -16,6 +16,7 @@ interface EmailData {
   receivedAt?: string;
   provider: 'gmail' | 'outlook' | 'webhook';
   messageId?: string;
+  organizationId?: string;
 }
 
 interface PhishingIndicator {
@@ -268,10 +269,60 @@ serve(async (req) => {
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    );
+    const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    
+    // Get organization context - can come from header, auth, or body
+    const orgIdHeader = req.headers.get('x-organization-id');
+    const authHeader = req.headers.get('authorization');
+    
+    let organizationId: string | null = null;
+    let isAuthenticated = false;
+
+    // If auth header provided, verify and get org from user profile
+    if (authHeader) {
+      const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: { headers: { Authorization: authHeader } }
+      });
+
+      const { data: { user }, error: authError } = await userClient.auth.getUser();
+      if (!authError && user) {
+        isAuthenticated = true;
+        const { data: profile } = await userClient
+          .from("profiles")
+          .select("organization_id")
+          .eq("user_id", user.id)
+          .single();
+        
+        if (profile) {
+          organizationId = profile.organization_id;
+          console.log(`Authenticated user ${user.id}, org: ${organizationId}`);
+        }
+      }
+    }
+
+    // Use header org ID if no auth (for webhook scenarios)
+    if (!organizationId && orgIdHeader) {
+      // Verify the org exists
+      const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: org, error: orgError } = await adminClient
+        .from('organizations')
+        .select('id')
+        .eq('id', orgIdHeader)
+        .single();
+      
+      if (!orgError && org) {
+        organizationId = orgIdHeader;
+        console.log(`Using org from header: ${organizationId}`);
+      } else {
+        console.error(`Invalid organization ID in header: ${orgIdHeader}`);
+        return new Response(
+          JSON.stringify({ error: 'Invalid organization ID' }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
 
     const contentType = req.headers.get('content-type') || '';
     let emailData: EmailData;
@@ -279,6 +330,20 @@ serve(async (req) => {
     // Handle different webhook formats
     if (contentType.includes('application/json')) {
       const body = await req.json();
+      
+      // Check if org ID is in body
+      if (!organizationId && body.organizationId) {
+        const adminClient = createClient(supabaseUrl, supabaseServiceKey);
+        const { data: org } = await adminClient
+          .from('organizations')
+          .select('id')
+          .eq('id', body.organizationId)
+          .single();
+        
+        if (org) {
+          organizationId = body.organizationId;
+        }
+      }
       
       // Detect provider format
       if (body.message && body.message.data) {
@@ -293,7 +358,8 @@ serve(async (req) => {
           html: gmailData.html,
           messageId: gmailData.id,
           provider: 'gmail',
-          receivedAt: new Date().toISOString()
+          receivedAt: new Date().toISOString(),
+          organizationId: organizationId || undefined
         };
       } else if (body.value && Array.isArray(body.value)) {
         // Microsoft Graph webhook format
@@ -306,7 +372,8 @@ serve(async (req) => {
           html: notification.body?.contentType === 'html' ? notification.body.content : undefined,
           messageId: notification.id,
           provider: 'outlook',
-          receivedAt: notification.receivedDateTime || new Date().toISOString()
+          receivedAt: notification.receivedDateTime || new Date().toISOString(),
+          organizationId: organizationId || undefined
         };
       } else {
         // Generic webhook format (SendGrid, Mailgun, etc.)
@@ -319,7 +386,8 @@ serve(async (req) => {
           headers: body.headers,
           messageId: body.messageId || body['Message-Id'],
           provider: 'webhook',
-          receivedAt: body.timestamp ? new Date(body.timestamp * 1000).toISOString() : new Date().toISOString()
+          receivedAt: body.timestamp ? new Date(body.timestamp * 1000).toISOString() : new Date().toISOString(),
+          organizationId: organizationId || undefined
         };
       }
     } else {
@@ -332,73 +400,80 @@ serve(async (req) => {
         body: formData.get('text')?.toString() || formData.get('body-plain')?.toString() || '',
         html: formData.get('html')?.toString() || formData.get('body-html')?.toString(),
         provider: 'webhook',
-        receivedAt: new Date().toISOString()
+        receivedAt: new Date().toISOString(),
+        organizationId: organizationId || undefined
       };
     }
 
-    console.log('Processing email from:', emailData.from, 'Subject:', emailData.subject);
+    // Require organization context for creating alerts
+    if (!organizationId) {
+      console.error('No organization context provided');
+      return new Response(
+        JSON.stringify({ 
+          error: 'Organization context required. Provide x-organization-id header, organizationId in body, or authenticate.' 
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log('Processing email from:', emailData.from, 'Subject:', emailData.subject, 'Org:', organizationId);
 
     // Analyze the email
     const analysis = analyzeEmail(emailData);
     
     console.log('Analysis complete. Risk score:', analysis.riskScore, 'Is phishing:', analysis.isPhishing);
 
+    // Use service role for creating alerts (org already verified)
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     // If phishing detected, create a security alert
     if (analysis.isPhishing || analysis.riskScore >= 30) {
-      const { data: orgs } = await supabase
-        .from('organizations')
-        .select('id')
-        .limit(1)
-        .single();
-
-      if (orgs) {
-        // Create security alert
-        const { error: alertError } = await supabase
-          .from('security_alerts')
-          .insert({
-            organization_id: orgs.id,
-            title: `Phishing Email Detected: ${emailData.subject.substring(0, 50)}`,
-            description: `Suspicious email from ${emailData.from}. Risk Score: ${analysis.riskScore}%. Indicators: ${analysis.indicators.map(i => i.type).join(', ')}`,
-            alert_type: 'phishing_detection',
-            priority: analysis.riskScore >= 70 ? 'critical' : analysis.riskScore >= 50 ? 'high' : 'medium',
-            raw_data: {
-              email: {
-                from: emailData.from,
-                to: emailData.to,
-                subject: emailData.subject,
-                provider: emailData.provider,
-                messageId: emailData.messageId,
-                receivedAt: emailData.receivedAt
-              },
-              analysis: {
-                riskScore: analysis.riskScore,
-                isPhishing: analysis.isPhishing,
-                indicators: analysis.indicators
-              }
+      // Create security alert for the verified organization
+      const { error: alertError } = await supabase
+        .from('security_alerts')
+        .insert({
+          organization_id: organizationId,
+          title: `Phishing Email Detected: ${emailData.subject.substring(0, 50)}`,
+          description: `Suspicious email from ${emailData.from}. Risk Score: ${analysis.riskScore}%. Indicators: ${analysis.indicators.map(i => i.type).join(', ')}`,
+          alert_type: 'phishing_detection',
+          priority: analysis.riskScore >= 70 ? 'critical' : analysis.riskScore >= 50 ? 'high' : 'medium',
+          raw_data: {
+            email: {
+              from: emailData.from,
+              to: emailData.to,
+              subject: emailData.subject,
+              provider: emailData.provider,
+              messageId: emailData.messageId,
+              receivedAt: emailData.receivedAt
             },
-            source_system: `email_monitor_${emailData.provider}`
+            analysis: {
+              riskScore: analysis.riskScore,
+              isPhishing: analysis.isPhishing,
+              indicators: analysis.indicators
+            }
+          },
+          source_system: `email_monitor_${emailData.provider}`
+        });
+
+      if (alertError) {
+        console.error('Error creating alert:', alertError);
+      }
+
+      // Also add to threat intelligence if critical
+      if (analysis.riskScore >= 70) {
+        const senderDomain = emailData.from.split('@')[1] || '';
+        await supabase
+          .from('threat_intelligence')
+          .insert({
+            indicator_type: 'email_domain',
+            indicator_value: senderDomain,
+            threat_type: 'phishing',
+            severity: 'high',
+            source: `email_monitor_${emailData.provider}`,
+            description: `Phishing email detected from domain. Subject: ${emailData.subject}`,
+            confidence_level: Math.min(analysis.riskScore, 95),
+            organization_id: organizationId
           });
-
-        if (alertError) {
-          console.error('Error creating alert:', alertError);
-        }
-
-        // Also add to threat intelligence if critical
-        if (analysis.riskScore >= 70) {
-          const senderDomain = emailData.from.split('@')[1] || '';
-          await supabase
-            .from('threat_intelligence')
-            .insert({
-              indicator_type: 'email_domain',
-              indicator_value: senderDomain,
-              threat_type: 'phishing',
-              severity: 'high',
-              source: `email_monitor_${emailData.provider}`,
-              description: `Phishing email detected from domain. Subject: ${emailData.subject}`,
-              confidence_level: Math.min(analysis.riskScore, 95),
-              organization_id: orgs.id
-            });
-        }
       }
     }
 
@@ -423,7 +498,7 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in email-monitor:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
