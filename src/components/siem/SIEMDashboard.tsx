@@ -21,6 +21,10 @@ import {
   BarChart3,
   Monitor,
   Loader2,
+  Radio,
+  Crosshair,
+  Target,
+  Radar,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,6 +34,7 @@ import { EventsStream } from "./EventsStream";
 import { SIEMAnalytics } from "./SIEMAnalytics";
 import { AgentDeployModal } from "./AgentDeployModal";
 import { CorrelationRules } from "./CorrelationRules";
+import { CyberToolsSidebar } from "./CyberToolsSidebar";
 
 interface AgentStats {
   total: number;
@@ -144,162 +149,199 @@ export const SIEMDashboard = () => {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin text-primary mx-auto mb-4" />
-          <p className="text-muted-foreground">Initializing SIEM...</p>
+          <div className="relative inline-block">
+            <Radar className="h-16 w-16 text-primary animate-spin mx-auto mb-4" />
+            <div className="absolute inset-0 border-2 border-primary/20 rounded-full animate-ping" />
+          </div>
+          <p className="text-primary font-mono text-sm tracking-widest animate-pulse">INITIALIZING SIEM...</p>
+          <div className="flex items-center justify-center gap-1 mt-2">
+            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
+            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
+            <div className="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* Hero Header */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-8">
-        <div className="absolute inset-0 bg-grid-white/5 [mask-image:radial-gradient(ellipse_at_center,transparent_20%,black)]" />
-        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl" />
-        <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl" />
-        
-        <div className="relative z-10 flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <div className="p-3 rounded-xl bg-gradient-to-br from-purple-500 to-blue-500 shadow-lg shadow-purple-500/25">
-                <Shield className="h-8 w-8 text-white" />
+    <div className="flex h-full">
+      {/* Cyber Tools Sidebar */}
+      <CyberToolsSidebar />
+
+      {/* Main Content */}
+      <div className="flex-1 space-y-6 p-6 overflow-auto">
+        {/* Military-Grade Hero Header */}
+        <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-background via-card to-primary/5">
+          {/* Animated grid background */}
+          <div className="absolute inset-0 bg-[linear-gradient(rgba(0,255,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,255,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] [mask-image:radial-gradient(ellipse_at_center,black_50%,transparent_100%)]" />
+          
+          {/* Scan lines */}
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,255,255,0.02)_50%)] bg-[length:100%_4px]" />
+          </div>
+
+          {/* Glowing orbs */}
+          <div className="absolute top-0 right-0 w-96 h-96 bg-primary/10 rounded-full blur-[100px]" />
+          <div className="absolute bottom-0 left-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-[80px]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-48 h-48 bg-cyan-500/5 rounded-full blur-[60px]" />
+          
+          <div className="relative z-10 p-8">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="relative">
+                    <div className="p-4 rounded-2xl bg-gradient-to-br from-primary/20 to-cyan-500/20 border border-primary/30 shadow-lg shadow-primary/20">
+                      <Shield className="h-10 w-10 text-primary" />
+                    </div>
+                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-2 border-background animate-pulse" />
+                    <div className="absolute -bottom-1 -left-1 w-3 h-3 bg-cyan-500 rounded-full border-2 border-background" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-3">
+                      <h1 className="text-3xl font-mono font-bold text-foreground tracking-tight">SIEM COMMAND CENTER</h1>
+                      <Badge variant="outline" className="font-mono text-xs border-emerald-500/50 text-emerald-400 animate-pulse">
+                        <Radio className="h-3 w-3 mr-1" />
+                        LIVE
+                      </Badge>
+                    </div>
+                    <p className="text-muted-foreground font-mono text-sm tracking-wide">
+                      SECURITY INFORMATION & EVENT MANAGEMENT // THREAT LEVEL: ELEVATED
+                    </p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <Button
+                  variant="outline"
+                  className="border-primary/30 text-primary hover:bg-primary/10 font-mono"
+                  onClick={fetchStats}
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  SYNC
+                </Button>
+                <Button
+                  className="bg-gradient-to-r from-primary to-cyan-500 hover:from-primary/90 hover:to-cyan-500/90 shadow-lg shadow-primary/25 font-mono"
+                  onClick={() => setShowDeployModal(true)}
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  DEPLOY AGENT
+                </Button>
+              </div>
+            </div>
+
+            {/* Stats Row - Military Style */}
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mt-8">
+              <StatCard
+                label="TOTAL AGENTS"
+                value={stats.total}
+                icon={Server}
+                color="text-foreground"
+                bgColor="bg-card/50 border-border/50"
+              />
+              <StatCard
+                label="OPERATIONAL"
+                value={stats.online}
+                icon={Crosshair}
+                color="text-emerald-400"
+                bgColor="bg-emerald-500/10 border-emerald-500/30"
+                pulse
+              />
+              <StatCard
+                label="OFFLINE"
+                value={stats.offline}
+                icon={Monitor}
+                color="text-red-400"
+                bgColor="bg-red-500/10 border-red-500/30"
+              />
+              <StatCard
+                label="CAUTION"
+                value={stats.warning}
+                icon={AlertTriangle}
+                color="text-yellow-400"
+                bgColor="bg-yellow-500/10 border-yellow-500/30"
+              />
+              <StatCard
+                label="EVENTS/24H"
+                value={stats.eventsToday.toLocaleString()}
+                icon={Zap}
+                color="text-primary"
+                bgColor="bg-primary/10 border-primary/30"
+              />
+              <StatCard
+                label="ALERTS/24H"
+                value={stats.alertsToday}
+                icon={Target}
+                color="text-orange-400"
+                bgColor="bg-orange-500/10 border-orange-500/30"
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content Tabs - Military Style */}
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="bg-card/50 backdrop-blur-sm border border-border/50 p-1 font-mono">
+            <TabsTrigger value="overview" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent">
+              <Globe className="h-4 w-4 mr-2" />
+              OVERVIEW
+            </TabsTrigger>
+            <TabsTrigger value="agents" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent">
+              <Server className="h-4 w-4 mr-2" />
+              AGENTS
+            </TabsTrigger>
+            <TabsTrigger value="events" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent">
+              <Activity className="h-4 w-4 mr-2" />
+              LIVE FEED
+            </TabsTrigger>
+            <TabsTrigger value="correlation" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent">
+              <Shield className="h-4 w-4 mr-2" />
+              CORRELATIONS
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="data-[state=active]:bg-primary/20 data-[state=active]:text-primary data-[state=active]:border-primary/30 border border-transparent">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              ANALYTICS
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="overview" className="space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-2">
+                <AgentGrid compact />
               </div>
               <div>
-                <h1 className="text-3xl font-bold text-white">SIEM Console</h1>
-                <p className="text-purple-200">Security Information & Event Management</p>
+                <EventsStream compact limit={10} />
               </div>
             </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              className="border-white/20 text-white hover:bg-white/10"
-              onClick={fetchStats}
-            >
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Refresh
-            </Button>
-            <Button
-              className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 shadow-lg shadow-purple-500/25"
-              onClick={() => setShowDeployModal(true)}
-            >
-              <Plus className="h-4 w-4 mr-2" />
-              Deploy Agent
-            </Button>
-          </div>
-        </div>
+          </TabsContent>
 
-        {/* Stats Row */}
-        <div className="relative z-10 grid grid-cols-2 md:grid-cols-6 gap-4 mt-8">
-          <StatCard
-            label="Total Agents"
-            value={stats.total}
-            icon={Server}
-            color="text-white"
-            bgColor="bg-white/10"
-          />
-          <StatCard
-            label="Online"
-            value={stats.online}
-            icon={Activity}
-            color="text-emerald-400"
-            bgColor="bg-emerald-500/20"
-            pulse
-          />
-          <StatCard
-            label="Offline"
-            value={stats.offline}
-            icon={Monitor}
-            color="text-red-400"
-            bgColor="bg-red-500/20"
-          />
-          <StatCard
-            label="Warning"
-            value={stats.warning}
-            icon={AlertTriangle}
-            color="text-yellow-400"
-            bgColor="bg-yellow-500/20"
-          />
-          <StatCard
-            label="Events Today"
-            value={stats.eventsToday.toLocaleString()}
-            icon={Zap}
-            color="text-blue-400"
-            bgColor="bg-blue-500/20"
-          />
-          <StatCard
-            label="Alerts Today"
-            value={stats.alertsToday}
-            icon={AlertTriangle}
-            color="text-orange-400"
-            bgColor="bg-orange-500/20"
-          />
-        </div>
+          <TabsContent value="agents">
+            <AgentGrid />
+          </TabsContent>
+
+          <TabsContent value="events">
+            <EventsStream />
+          </TabsContent>
+
+          <TabsContent value="correlation">
+            <CorrelationRules />
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <SIEMAnalytics />
+          </TabsContent>
+        </Tabs>
+
+        <AgentDeployModal 
+          open={showDeployModal} 
+          onClose={() => setShowDeployModal(false)}
+          onSuccess={() => {
+            setShowDeployModal(false);
+            fetchStats();
+          }}
+        />
       </div>
-
-      {/* Main Content Tabs */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="bg-card/50 backdrop-blur-sm border p-1">
-          <TabsTrigger value="overview" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Globe className="h-4 w-4 mr-2" />
-            Overview
-          </TabsTrigger>
-          <TabsTrigger value="agents" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Server className="h-4 w-4 mr-2" />
-            Agents
-          </TabsTrigger>
-          <TabsTrigger value="events" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Activity className="h-4 w-4 mr-2" />
-            Live Events
-          </TabsTrigger>
-          <TabsTrigger value="correlation" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <Shield className="h-4 w-4 mr-2" />
-            Correlation Rules
-          </TabsTrigger>
-          <TabsTrigger value="analytics" className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
-            <BarChart3 className="h-4 w-4 mr-2" />
-            Analytics
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2">
-              <AgentGrid compact />
-            </div>
-            <div>
-              <EventsStream compact limit={10} />
-            </div>
-          </div>
-        </TabsContent>
-
-        <TabsContent value="agents">
-          <AgentGrid />
-        </TabsContent>
-
-        <TabsContent value="events">
-          <EventsStream />
-        </TabsContent>
-
-        <TabsContent value="correlation">
-          <CorrelationRules />
-        </TabsContent>
-
-        <TabsContent value="analytics">
-          <SIEMAnalytics />
-        </TabsContent>
-      </Tabs>
-
-      <AgentDeployModal 
-        open={showDeployModal} 
-        onClose={() => setShowDeployModal(false)}
-        onSuccess={() => {
-          setShowDeployModal(false);
-          fetchStats();
-        }}
-      />
     </div>
   );
 };
@@ -314,14 +356,14 @@ interface StatCardProps {
 }
 
 const StatCard = ({ label, value, icon: Icon, color, bgColor, pulse }: StatCardProps) => (
-  <div className={`${bgColor} backdrop-blur-sm rounded-xl p-4 border border-white/10`}>
+  <div className={`${bgColor} backdrop-blur-sm rounded-xl p-4 border transition-all duration-300 hover:scale-[1.02] hover:shadow-lg`}>
     <div className="flex items-center gap-3">
-      <div className={`p-2 rounded-lg ${bgColor} ${pulse ? "animate-pulse" : ""}`}>
+      <div className={`p-2 rounded-lg bg-background/50 ${pulse ? "animate-pulse" : ""}`}>
         <Icon className={`h-5 w-5 ${color}`} />
       </div>
       <div>
-        <p className="text-2xl font-bold text-white">{value}</p>
-        <p className="text-xs text-white/60">{label}</p>
+        <p className={`text-2xl font-mono font-bold ${color}`}>{value}</p>
+        <p className="text-[10px] font-mono text-muted-foreground tracking-widest">{label}</p>
       </div>
     </div>
   </div>
