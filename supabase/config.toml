@@ -1,5 +1,8 @@
 project_id = "pboadzdcadtvuqzigysv"
 
+[functions.cyber-arsenal]
+verify_jwt = false
+
 [functions.email-monitor]
 verify_jwt = false
 
