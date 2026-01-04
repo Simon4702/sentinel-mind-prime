@@ -13,7 +13,159 @@ interface CommandRequest {
   options?: Record<string, any>;
 }
 
-// Simulated tool outputs for demonstration - in production, these would connect to actual tool APIs
+// Real API integrations
+async function queryVirusTotal(target: string, queryType: 'ip' | 'domain' | 'hash'): Promise<string> {
+  const apiKey = Deno.env.get('VIRUSTOTAL_API_KEY');
+  if (!apiKey) {
+    return "Error: VIRUSTOTAL_API_KEY not configured. Please add your API key in project settings.";
+  }
+
+  try {
+    let endpoint = '';
+    if (queryType === 'ip') {
+      endpoint = `https://www.virustotal.com/api/v3/ip_addresses/${target}`;
+    } else if (queryType === 'domain') {
+      endpoint = `https://www.virustotal.com/api/v3/domains/${target}`;
+    } else if (queryType === 'hash') {
+      endpoint = `https://www.virustotal.com/api/v3/files/${target}`;
+    }
+
+    const response = await fetch(endpoint, {
+      headers: { 'x-apikey': apiKey }
+    });
+
+    if (!response.ok) {
+      if (response.status === 404) return `[VirusTotal] No data found for: ${target}`;
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const stats = data.data?.attributes?.last_analysis_stats || {};
+    const reputation = data.data?.attributes?.reputation || 'N/A';
+    
+    return `[VirusTotal] Analysis for: ${target}
+=====================================
+Type: ${queryType.toUpperCase()}
+Reputation Score: ${reputation}
+
+Detection Stats:
+  ✗ Malicious: ${stats.malicious || 0}
+  ⚠ Suspicious: ${stats.suspicious || 0}
+  ✓ Harmless: ${stats.harmless || 0}
+  ? Undetected: ${stats.undetected || 0}
+
+Last Analysis: ${data.data?.attributes?.last_analysis_date ? new Date(data.data.attributes.last_analysis_date * 1000).toISOString() : 'N/A'}
+${stats.malicious > 0 ? '\n⚠️  WARNING: This indicator has been flagged as MALICIOUS!' : ''}`;
+  } catch (error) {
+    console.error('VirusTotal API error:', error);
+    return `[VirusTotal] Error querying API: ${error.message}`;
+  }
+}
+
+async function queryAbuseIPDB(ip: string): Promise<string> {
+  const apiKey = Deno.env.get('ABUSEIPDB_API_KEY');
+  if (!apiKey) {
+    return "Error: ABUSEIPDB_API_KEY not configured. Please add your API key in project settings.";
+  }
+
+  try {
+    const response = await fetch(`https://api.abuseipdb.com/api/v2/check?ipAddress=${ip}&maxAgeInDays=90&verbose`, {
+      headers: {
+        'Key': apiKey,
+        'Accept': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    const result = data.data;
+
+    return `[AbuseIPDB] IP Reputation Report for: ${ip}
+=====================================
+Abuse Confidence Score: ${result.abuseConfidenceScore}%
+Total Reports: ${result.totalReports}
+Country: ${result.countryCode || 'Unknown'}
+ISP: ${result.isp || 'Unknown'}
+Domain: ${result.domain || 'N/A'}
+Usage Type: ${result.usageType || 'Unknown'}
+Is Tor: ${result.isTor ? 'Yes ⚠️' : 'No'}
+Is Public Proxy: ${result.isPublicProxy ? 'Yes ⚠️' : 'No'}
+Last Reported: ${result.lastReportedAt || 'Never'}
+
+${result.abuseConfidenceScore > 50 ? '⚠️  WARNING: HIGH ABUSE CONFIDENCE - This IP has been reported for malicious activity!' : result.abuseConfidenceScore > 0 ? '⚡ CAUTION: This IP has some abuse reports.' : '✓ This IP appears clean.'}`;
+  } catch (error) {
+    console.error('AbuseIPDB API error:', error);
+    return `[AbuseIPDB] Error querying API: ${error.message}`;
+  }
+}
+
+async function queryShodan(target: string, queryType: 'ip' | 'search'): Promise<string> {
+  const apiKey = Deno.env.get('SHODAN_API_KEY');
+  if (!apiKey) {
+    return "Error: SHODAN_API_KEY not configured. Please add your API key in project settings.";
+  }
+
+  try {
+    let endpoint = '';
+    if (queryType === 'ip') {
+      endpoint = `https://api.shodan.io/shodan/host/${target}?key=${apiKey}`;
+    } else {
+      endpoint = `https://api.shodan.io/shodan/host/search?key=${apiKey}&query=${encodeURIComponent(target)}`;
+    }
+
+    const response = await fetch(endpoint);
+
+    if (!response.ok) {
+      if (response.status === 404) return `[Shodan] No data found for: ${target}`;
+      throw new Error(`API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    if (queryType === 'ip') {
+      const ports = data.ports?.join(', ') || 'None detected';
+      const vulns = data.vulns ? Object.keys(data.vulns).slice(0, 10).join(', ') : 'None detected';
+      
+      return `[Shodan] Host Intelligence for: ${target}
+=====================================
+Organization: ${data.org || 'Unknown'}
+ISP: ${data.isp || 'Unknown'}
+Country: ${data.country_name || 'Unknown'} (${data.country_code || 'N/A'})
+City: ${data.city || 'Unknown'}
+OS: ${data.os || 'Unknown'}
+Last Update: ${data.last_update || 'N/A'}
+
+Open Ports: ${ports}
+Hostnames: ${data.hostnames?.join(', ') || 'None'}
+
+${data.vulns ? `⚠️  VULNERABILITIES DETECTED:
+${vulns}
+${Object.keys(data.vulns).length > 10 ? `... and ${Object.keys(data.vulns).length - 10} more` : ''}` : '✓ No known vulnerabilities detected'}
+
+Services:
+${data.data?.slice(0, 5).map((s: any) => `  - Port ${s.port}: ${s.product || 'Unknown'} ${s.version || ''}`).join('\n') || '  No service data available'}`;
+    } else {
+      const total = data.total || 0;
+      const matches = data.matches?.slice(0, 5) || [];
+      
+      return `[Shodan] Search Results for: ${target}
+=====================================
+Total Results: ${total}
+
+Top Matches:
+${matches.map((m: any, i: number) => `  ${i + 1}. ${m.ip_str} (${m.org || 'Unknown'})
+     Port: ${m.port} | Country: ${m.location?.country_name || 'Unknown'}`).join('\n') || '  No matches found'}`;
+    }
+  } catch (error) {
+    console.error('Shodan API error:', error);
+    return `[Shodan] Error querying API: ${error.message}`;
+  }
+}
+
+// Tool simulators for tools without APIs
 const toolSimulators: Record<string, (cmd: string, target?: string) => Promise<string>> = {
   nmap: async (cmd: string, target?: string) => {
     const targetHost = target || "192.168.1.0/24";
@@ -30,40 +182,24 @@ PORT      STATE    SERVICE       VERSION
 443/tcp   open     https         nginx 1.24.0
 3306/tcp  filtered mysql
 8080/tcp  open     http-proxy    
-22222/tcp closed   unknown
 
-Service detection performed. 6 services scanned.
 Nmap done: 1 IP address (1 host up) scanned in 4.23 seconds`;
     }
     
     if (cmd.includes("--script vuln")) {
-      return `Starting Nmap 7.94 ( https://nmap.org )
-Pre-scan script results:
-| broadcast-avahi-dos: 
-|   Discovered hosts:
-|     192.168.1.1
-|   After NULL UDP broadcast syslog (DoS):
-|_    Hosts are still up (not vulnerable)
+      return `Starting Nmap 7.94 vulnerability scan for ${targetHost}
 
-Nmap scan report for ${targetHost}
-Host is up (0.00089s latency).
-
-PORT    STATE SERVICE
-80/tcp  open  http
-|_http-csrf: Couldn't find any CSRF vulnerabilities.
-|_http-stored-xss: Couldn't find any stored XSS vulnerabilities.
 | http-vuln-cve2017-5638: 
 |   VULNERABLE:
-|   Apache Struts Remote Code Execution (CVE-2017-5638)
+|   Apache Struts Remote Code Execution
 |_    Risk factor: High
 
-443/tcp open  https
 | ssl-poodle: 
 |   VULNERABLE:
 |   SSL POODLE information leak
 |_    Risk factor: Medium
 
-Nmap done: 1 IP address (1 host up) scanned in 12.45 seconds`;
+Nmap done: 1 IP address scanned in 12.45 seconds`;
     }
     
     return `Nmap scan completed for ${targetHost}\n256 hosts scanned, 12 hosts up`;
@@ -75,28 +211,12 @@ Nmap done: 1 IP address (1 host up) scanned in 12.45 seconds`;
     if (cmd.includes("search")) {
       return `Matching Modules
 ================
+   0  exploit/multi/http/apache_mod_cgi_bash_env_exec  excellent
+   1  exploit/unix/webapp/wp_admin_shell_upload        excellent
+   2  exploit/multi/handler                            manual
+   3  auxiliary/scanner/ssh/ssh_login                  normal
 
-   #  Name                                           Disclosure Date  Rank       Check  Description
-   -  ----                                           ---------------  ----       -----  -----------
-   0  exploit/multi/http/apache_mod_cgi_bash_env_exec  2014-09-24     excellent  Yes    Apache mod_cgi Bash Environment Variable Code Injection
-   1  exploit/unix/webapp/wp_admin_shell_upload        2015-02-21     excellent  Yes    WordPress Admin Shell Upload
-   2  exploit/multi/handler                            -              manual     No     Generic Payload Handler
-   3  auxiliary/scanner/ssh/ssh_login                  -              normal     No     SSH Login Check Scanner
-   4  exploit/linux/http/apache_spark_exec             2022-10-12     excellent  Yes    Apache Spark Command Injection
-
-   Total: 5 matching modules`;
-    }
-    
-    if (cmd.includes("use exploit")) {
-      return `[*] Using configured payload generic/shell_reverse_tcp
-msf6 exploit(multi/handler) > set LHOST 10.10.14.5
-LHOST => 10.10.14.5
-msf6 exploit(multi/handler) > set LPORT 4444
-LPORT => 4444
-msf6 exploit(multi/handler) > exploit
-
-[*] Started reverse TCP handler on 10.10.14.5:4444 
-[*] Waiting for connection...`;
+   Total: 4 matching modules`;
     }
     
     return `[*] Metasploit Framework v6.3.44
@@ -108,152 +228,101 @@ msf6 exploit(multi/handler) > exploit
     
     if (cmd.includes("capture")) {
       return `Capturing on 'eth0'
-   1 0.000000    192.168.1.100 → 8.8.8.8      DNS 74 Standard query 0x1234 A google.com
-   2 0.023456    8.8.8.8 → 192.168.1.100      DNS 90 Standard query response 0x1234 A google.com A 142.250.80.46
-   3 0.024123    192.168.1.100 → 142.250.80.46  TCP 66 52847 → 443 [SYN]
-   4 0.045678    142.250.80.46 → 192.168.1.100  TCP 66 443 → 52847 [SYN, ACK]
-   5 0.046000    192.168.1.100 → 142.250.80.46  TCP 54 52847 → 443 [ACK]
-   6 0.047123    192.168.1.100 → 142.250.80.46  TLSv1.3 571 Client Hello
+   1 0.000000    192.168.1.100 → 8.8.8.8      DNS 74 Standard query A google.com
+   2 0.023456    8.8.8.8 → 192.168.1.100      DNS 90 Standard query response
+   3 0.024123    192.168.1.100 → 142.250.80.46  TCP 66 [SYN]
+   4 0.045678    142.250.80.46 → 192.168.1.100  TCP 66 [SYN, ACK]
 
-Packets captured: 6`;
+Packets captured: 4`;
     }
     
-    return `Wireshark: ${cmd}\nCapture interface ready`;
+    return `Wireshark: ${cmd}\nCapture ready`;
   },
 
-  burp: async (cmd: string) => {
+  burp: async (cmd: string, target?: string) => {
     await new Promise(r => setTimeout(r, 1800));
     
     if (cmd.includes("spider") || cmd.includes("scan")) {
-      return `[BURP SUITE PRO] Active Scan Started
-Target: https://target.example.com
-
-[INFO] Crawling target...
-[INFO] Found 47 unique URLs
-[INFO] Analyzing parameters...
+      return `[BURP SUITE PRO] Active Scan
+Target: ${target || 'https://target.example.com'}
 
 VULNERABILITIES DETECTED:
 [HIGH] SQL Injection - /api/users?id=1
 [HIGH] Stored XSS - /comments (POST body)
 [MEDIUM] CSRF - /account/settings
-[MEDIUM] Insecure Direct Object Reference - /api/documents/{id}
-[LOW] Information Disclosure - Server header reveals version
 [LOW] Missing X-Frame-Options header
 
-Scan Progress: 100% (47/47 URLs)
-Issues Found: 6 (2 High, 2 Medium, 2 Low)`;
+Issues Found: 4 (2 High, 1 Medium, 1 Low)`;
     }
     
-    return `[BURP] Command executed: ${cmd}`;
+    return `[BURP] ${cmd}`;
   },
 
   snort: async (cmd: string) => {
     await new Promise(r => setTimeout(r, 800));
     
-    return `Snort 3.1.58.0-1 - Network Intrusion Detection System
-Running in IDS mode
-
+    return `Snort 3.1.58.0-1 - Network IDS
 [*] Loaded 31,456 rules
-[*] Preprocessors: http_inspect, ssh, smtp, ftp
 [*] Starting packet capture...
 
-03/12-14:23:45.123456  [**] [1:2100498:7] GPL ATTACK_RESPONSE id check returned root [**]
+[**] [1:2100498:7] GPL ATTACK_RESPONSE id check returned root [**]
 [Classification: Potentially Bad Traffic] [Priority: 2]
-{TCP} 192.168.1.50:80 -> 10.0.0.15:45234
 
-03/12-14:23:47.234567  [**] [1:2402000:6] ET DROP Dshield Block Listed Source [**]
-[Classification: Misc Attack] [Priority: 2]
-{TCP} 45.227.255.206:443 -> 192.168.1.100:52847
-
-Alerts: 2 | Packets: 15,432 | Dropped: 0`;
+Alerts: 1 | Packets: 15,432`;
   },
 
   osquery: async (cmd: string) => {
     await new Promise(r => setTimeout(r, 600));
     
     if (cmd.includes("processes")) {
-      return `+-------+----------------+------+--------+------------+
-| pid   | name           | uid  | state  | start_time |
-+-------+----------------+------+--------+------------+
-| 1     | systemd        | 0    | S      | 1710234567 |
-| 423   | sshd           | 0    | S      | 1710234578 |
-| 892   | nginx          | 33   | S      | 1710234590 |
-| 1024  | postgres       | 109  | S      | 1710234612 |
-| 1456  | node           | 1000 | R      | 1710234789 |
-| 2341  | suspicious.sh  | 0    | R      | 1710298765 |
-+-------+----------------+------+--------+------------+
-⚠️  WARNING: Process 'suspicious.sh' running as root may require investigation`;
+      return `+-------+----------------+------+--------+
+| pid   | name           | uid  | state  |
++-------+----------------+------+--------+
+| 1     | systemd        | 0    | S      |
+| 423   | sshd           | 0    | S      |
+| 892   | nginx          | 33   | S      |
+| 2341  | suspicious.sh  | 0    | R      |
++-------+----------------+------+--------+
+⚠️  WARNING: Process 'suspicious.sh' running as root`;
     }
     
     if (cmd.includes("listening_ports")) {
-      return `+-------+------+----------+--------+
-| pid   | port | protocol | family |
-+-------+------+----------+--------+
-| 423   | 22   | 6        | 2      |
-| 892   | 80   | 6        | 2      |
-| 892   | 443  | 6        | 2      |
-| 1024  | 5432 | 6        | 2      |
-| 1456  | 3000 | 6        | 2      |
-+-------+------+----------+--------+`;
+      return `+-------+------+----------+
+| pid   | port | protocol |
++-------+------+----------+
+| 423   | 22   | tcp      |
+| 892   | 80   | tcp      |
+| 892   | 443  | tcp      |
++-------+------+----------+`;
     }
     
-    return `osquery> ${cmd}\nQuery executed successfully`;
+    return `osquery> ${cmd}\nQuery executed`;
   },
 
   hashcat: async (cmd: string) => {
     await new Promise(r => setTimeout(r, 2500));
     
-    if (cmd.includes("-m 0") || cmd.includes("hash.txt")) {
-      return `hashcat (v6.2.6) starting...
-
-* Device #1: NVIDIA GeForce RTX 4090, 24564/24564 MB, 128MCU
-
-Hashes: 5 digests; 5 unique digests, 1 unique salts
-Bitmaps: 16 bits, 65536 entries, 0x0000ffff mask, 262144 bytes, 5/13 rotates
-
-Dictionary cache built:
-* Filename..: wordlist.txt
-* Passwords.: 14344392
-* Bytes.....: 139921507
+    return `hashcat (v6.2.6)
+Speed.#1.........:  5847.3 MH/s
+Recovered........: 3/5 (60.00%)
 
 5d41402abc4b2a76b9719d911017c592:hello
 098f6bcd4621d373cade4e832627b4f6:test
-e10adc3949ba59abbe56e057f20f883e:123456
-
-Session..........: hashcat
-Status...........: Cracked
-Hash.Mode........: 0 (MD5)
-Speed.#1.........:  5847.3 MH/s
-Recovered........: 3/5 (60.00%)
-Time.Elapsed.....: 00:00:02`;
-    }
-    
-    return `hashcat v6.2.6: ${cmd}`;
+e10adc3949ba59abbe56e057f20f883e:123456`;
   },
 
   autopsy: async (cmd: string) => {
     await new Promise(r => setTimeout(r, 1200));
     
-    return `[Autopsy 4.21.0] Digital Forensics Platform
-Case: INCIDENT-2024-0312
-Evidence: disk_image.E01
-
-Running Ingest Modules...
-✓ Hash Lookup (NSRL) - 15,432 known files identified
-✓ File Type Identification - Complete
-✓ Keyword Search - 47 hits found
+    return `[Autopsy 4.21.0] Digital Forensics
+✓ Hash Lookup (NSRL) - 15,432 known files
 ✓ Email Parser - 234 emails extracted
-✓ Web Artifacts - 1,892 URLs recovered
-⚠ Encryption Detection - 3 encrypted volumes found
-✓ Interesting Files - 12 flagged items
+⚠ Encryption Detection - 3 encrypted volumes
 
-TIMELINE ANALYSIS:
-- 2024-03-10 14:23:15 - USB device connected (SanDisk Cruzer)
+TIMELINE:
+- 2024-03-10 14:23:15 - USB connected
 - 2024-03-10 14:25:47 - sensitive_data.xlsx accessed
-- 2024-03-10 14:28:33 - Large file copy to USB detected
-- 2024-03-10 14:30:01 - USB device disconnected
-
-Analysis complete. Review flagged items in the case.`;
+- 2024-03-10 14:28:33 - Large file copy detected`;
   },
 
   volatility: async (cmd: string) => {
@@ -261,111 +330,127 @@ Analysis complete. Review flagged items in the case.`;
     
     if (cmd.includes("pslist")) {
       return `Volatility 3 Framework 3.0.0
-PID     PPID    ImageFileName   Offset(V)       Threads Handles
-4       0       System          0x823c8830      53      244
-368     4       smss.exe        0x822f1020      3       19
-584     368     csrss.exe       0x822a0598      9       326
-608     368     wininit.exe     0x822d6da0      1       75
-616     600     csrss.exe       0x8229ada0      8       173
-▶ 1456  608     suspicious.exe  0x82134da0      4       89   [SUSPICIOUS]
-3124    1456    cmd.exe         0x821a1da0      1       33
+PID     PPID    ImageFileName
+4       0       System
+368     4       smss.exe
+1456    608     suspicious.exe  [SUSPICIOUS]
 
-⚠ Process suspicious.exe spawned from wininit.exe - unusual parent process`;
+⚠ suspicious.exe - unusual parent process`;
     }
     
     if (cmd.includes("netscan")) {
       return `Volatility 3 Framework 3.0.0
-Offset          Proto   LocalAddr       ForeignAddr     State       PID
-0x823e8f00      TCPv4   0.0.0.0:135     0.0.0.0:0       LISTENING   684
-0x823d4a20      TCPv4   0.0.0.0:445     0.0.0.0:0       LISTENING   4
-0x8234b1a0      TCPv4   192.168.1.50:49832  45.33.32.156:443  ESTABLISHED  1456
-▶ 0x82367da0    TCPv4   192.168.1.50:4444   185.234.72.10:8080  ESTABLISHED  1456
+Proto   LocalAddr       ForeignAddr     State       PID
+TCPv4   0.0.0.0:135     0.0.0.0:0       LISTENING   684
+TCPv4   192.168.1.50:4444   185.234.72.10:8080  ESTABLISHED  1456
 
-⚠ Connection to 185.234.72.10:8080 flagged as C2 traffic`;
+⚠ Connection to 185.234.72.10:8080 flagged as C2`;
     }
     
-    return `Volatility 3: ${cmd}\nMemory analysis complete`;
+    return `Volatility 3: ${cmd}`;
   },
 
   zeek: async (cmd: string) => {
     await new Promise(r => setTimeout(r, 900));
     
-    return `[Zeek 6.2.0] Network Security Monitor
+    return `[Zeek 6.2.0] Network Monitor
 Status: Running
-Capturing on interface: eth0
 
-Connection Log (last 5):
-#ts          orig_h        orig_p  resp_h        resp_p  proto service
-1710234567.1 192.168.1.50  52847   142.250.80.46 443     tcp   ssl
-1710234568.2 192.168.1.50  52848   8.8.8.8       53      udp   dns
-1710234569.3 192.168.1.100 45234   192.168.1.1   80      tcp   http
-1710234570.4 10.0.0.15     22      192.168.1.50  49832   tcp   ssh
-1710234571.5 185.234.72.10 8080    192.168.1.50  4444    tcp   -
+Connection Log:
+192.168.1.50:52847   142.250.80.46:443     tcp   ssl
+192.168.1.50:52848   8.8.8.8:53            udp   dns
+185.234.72.10:8080   192.168.1.50:4444     tcp   -
 
-NOTICE: Zeek::Notice::ACTION_LOG
-msg: "Potentially malicious traffic detected"
-src: 185.234.72.10
-dst: 192.168.1.50:4444
-note: Intel::Notice (matched threat intel)`;
+NOTICE: Potentially malicious traffic detected
+src: 185.234.72.10 → dst: 192.168.1.50:4444`;
   },
 
   misp: async (cmd: string) => {
     await new Promise(r => setTimeout(r, 700));
     
     if (cmd.includes("sync")) {
-      return `[MISP 2.4.183] Threat Intelligence Platform
+      return `[MISP 2.4.183] Threat Intelligence
 Synchronizing feeds...
 
 ✓ CIRCL OSINT Feed - 1,234 new indicators
 ✓ Abuse.ch URLhaus - 567 new URLs
 ✓ AlienVault OTX - 892 new IOCs
-✓ EmergingThreats - 234 new rules
 
-Total synchronized: 2,927 indicators
-New malware hashes: 456
-New C2 domains: 123
-New suspicious IPs: 789
-
-Last sync: 2024-03-12 14:35:22 UTC`;
+Total synchronized: 2,693 indicators`;
     }
     
-    return `[MISP] ${cmd}\nOperation completed`;
+    return `[MISP] ${cmd}`;
   },
 
-  kali: async (cmd: string) => {
+  kali: async (cmd: string, target?: string) => {
     await new Promise(r => setTimeout(r, 1000));
     
     if (cmd.includes("aircrack")) {
       return `Aircrack-ng 1.7
-[00:00:15] 52341/9823456 keys tested (3485.12 k/s)
-Time left: 46 minutes, 54 seconds
+[00:00:15] 52341 keys tested
 
-                      KEY FOUND! [ s3cur1tyK3y2024 ]
-
-Master Key     : A1 B2 C3 D4 E5 F6 A7 B8 C9 D0 E1 F2 A3 B4 C5 D6
-Transient Key  : 12 34 56 78 9A BC DE F0 12 34 56 78 9A BC DE F0
-
-EAPOL HMAC     : 1A 2B 3C 4D 5E 6F 7A 8B 9C 0D 1E 2F 3A 4B 5C 6D`;
+KEY FOUND! [ s3cur1tyK3y2024 ]`;
     }
     
     if (cmd.includes("hydra")) {
-      return `Hydra v9.5 - Network Logon Cracker
-
-[DATA] max 16 tasks per 1 server, overall 16 tasks
-[DATA] attacking ssh://192.168.1.50:22/
-[STATUS] 124.00 tries/min, 124 tries in 00:01h
-[22][ssh] host: 192.168.1.50   login: admin   password: P@ssw0rd123
-1 of 1 target successfully completed, 1 valid password found`;
+      return `Hydra v9.5
+[22][ssh] host: ${target || '192.168.1.50'}   login: admin   password: P@ssw0rd123
+1 valid password found`;
     }
     
     return `┌──(kali㉿kali)-[~]
 └─$ ${cmd}
-Command executed successfully`;
+Executed`;
+  },
+
+  // New real API integrations
+  virustotal: async (cmd: string, target?: string) => {
+    if (!target) {
+      return "[VirusTotal] Error: Please provide a target (IP, domain, or hash) to analyze.";
+    }
+    
+    // Determine query type
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const hashRegex = /^[a-fA-F0-9]{32,64}$/;
+    
+    let queryType: 'ip' | 'domain' | 'hash';
+    if (ipRegex.test(target)) {
+      queryType = 'ip';
+    } else if (hashRegex.test(target)) {
+      queryType = 'hash';
+    } else {
+      queryType = 'domain';
+    }
+    
+    return await queryVirusTotal(target, queryType);
+  },
+
+  abuseipdb: async (cmd: string, target?: string) => {
+    if (!target) {
+      return "[AbuseIPDB] Error: Please provide an IP address to check.";
+    }
+    
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    if (!ipRegex.test(target)) {
+      return "[AbuseIPDB] Error: Invalid IP address format. Please provide a valid IPv4 address.";
+    }
+    
+    return await queryAbuseIPDB(target);
+  },
+
+  shodan: async (cmd: string, target?: string) => {
+    if (!target) {
+      return "[Shodan] Error: Please provide an IP address or search query.";
+    }
+    
+    const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+    const queryType: 'ip' | 'search' = ipRegex.test(target) ? 'ip' : 'search';
+    
+    return await queryShodan(target, queryType);
   },
 };
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -375,7 +460,6 @@ serve(async (req) => {
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey);
 
-    // Verify authentication
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Missing authorization header' }), {
@@ -394,7 +478,6 @@ serve(async (req) => {
       });
     }
 
-    // Verify user has security_analyst or admin role
     const { data: profile } = await supabase
       .from('profiles')
       .select('role, organization_id')
@@ -409,11 +492,10 @@ serve(async (req) => {
     }
 
     const body: CommandRequest = await req.json();
-    const { toolId, command, target, options } = body;
+    const { toolId, command, target } = body;
 
-    console.log(`[CYBER-ARSENAL] User ${user.email} executing ${toolId}: ${command}`);
+    console.log(`[CYBER-ARSENAL] User ${user.email} executing ${toolId}: ${command} ${target ? `-> ${target}` : ''}`);
 
-    // Get the simulator for this tool
     const simulator = toolSimulators[toolId];
     if (!simulator) {
       return new Response(JSON.stringify({ 
@@ -425,10 +507,8 @@ serve(async (req) => {
       });
     }
 
-    // Execute the simulated command
     const output = await simulator(command, target);
 
-    // Log the action to audit trail
     if (profile.organization_id) {
       await supabase.from('audit_logs').insert({
         organization_id: profile.organization_id,
@@ -445,6 +525,7 @@ serve(async (req) => {
       success: true,
       toolId,
       command,
+      target,
       output,
       timestamp: new Date().toISOString(),
       executedBy: user.email,
