@@ -25,6 +25,7 @@ import {
   Crosshair,
   Target,
   Radar,
+  Search,
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -35,6 +36,7 @@ import { SIEMAnalytics } from "./SIEMAnalytics";
 import { AgentDeployModal } from "./AgentDeployModal";
 import { CorrelationRules } from "./CorrelationRules";
 import { CyberToolsSidebar } from "./CyberToolsSidebar";
+import { ThreatIntelDashboard } from "./ThreatIntelDashboard";
 
 interface AgentStats {
   total: number;
@@ -302,6 +304,10 @@ export const SIEMDashboard = () => {
                 <BarChart3 className="h-3.5 w-3.5 mr-1.5" />
                 ANALYTICS
               </TabsTrigger>
+              <TabsTrigger value="threat-intel" className="text-xs data-[state=active]:bg-violet-500/20 data-[state=active]:text-violet-400">
+                <Search className="h-3.5 w-3.5 mr-1.5" />
+                THREAT INTEL
+              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="overview" className="space-y-4">
@@ -329,6 +335,10 @@ export const SIEMDashboard = () => {
 
             <TabsContent value="analytics">
               <SIEMAnalytics />
+            </TabsContent>
+
+            <TabsContent value="threat-intel">
+              <ThreatIntelDashboard />
             </TabsContent>
           </Tabs>
 
