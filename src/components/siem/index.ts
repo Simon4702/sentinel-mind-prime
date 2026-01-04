@@ -5,3 +5,4 @@ export { SIEMAnalytics } from "./SIEMAnalytics";
 export { AgentDeployModal } from "./AgentDeployModal";
 export { CorrelationRules } from "./CorrelationRules";
 export { CyberToolsSidebar } from "./CyberToolsSidebar";
+export { ThreatIntelDashboard } from "./ThreatIntelDashboard";

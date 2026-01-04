@@ -509,6 +509,86 @@ serve(async (req) => {
 
     const output = await simulator(command, target);
 
+    // Parse results for threat intel tools and store in database
+    let scanRecord = null;
+    if (['virustotal', 'abuseipdb', 'shodan'].includes(toolId) && target) {
+      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
+      const hashRegex = /^[a-fA-F0-9]{32,64}$/;
+      
+      let targetType = 'domain';
+      if (ipRegex.test(target)) targetType = 'ip';
+      else if (hashRegex.test(target)) targetType = 'hash';
+      
+      // Parse output for risk indicators
+      let riskScore = 0;
+      let isMalicious = false;
+      let tags: string[] = [];
+      
+      if (toolId === 'virustotal') {
+        const maliciousMatch = output.match(/Malicious:\s*(\d+)/);
+        const suspiciousMatch = output.match(/Suspicious:\s*(\d+)/);
+        if (maliciousMatch) {
+          const malCount = parseInt(maliciousMatch[1]);
+          riskScore = Math.min(100, malCount * 5);
+          isMalicious = malCount > 0;
+          if (isMalicious) tags.push('malicious');
+        }
+        if (suspiciousMatch && parseInt(suspiciousMatch[1]) > 0) tags.push('suspicious');
+        tags.push('virustotal');
+      } else if (toolId === 'abuseipdb') {
+        const scoreMatch = output.match(/Abuse Confidence Score:\s*(\d+)%/);
+        const reportsMatch = output.match(/Total Reports:\s*(\d+)/);
+        if (scoreMatch) {
+          riskScore = parseInt(scoreMatch[1]);
+          isMalicious = riskScore > 50;
+        }
+        if (reportsMatch && parseInt(reportsMatch[1]) > 0) tags.push('reported');
+        if (output.includes('Is Tor: Yes')) tags.push('tor');
+        if (output.includes('Is Public Proxy: Yes')) tags.push('proxy');
+        tags.push('abuseipdb');
+      } else if (toolId === 'shodan') {
+        if (output.includes('VULNERABILITIES DETECTED')) {
+          isMalicious = false; // Vulns don't mean malicious
+          const vulnMatch = output.match(/VULNERABILITIES DETECTED:\s*\n([\s\S]*?)(?=\n\n|Services:)/);
+          if (vulnMatch) {
+            const vulnList = vulnMatch[1].trim().split(/,\s*/);
+            riskScore = Math.min(100, vulnList.length * 10);
+            tags.push('vulnerable');
+          }
+        }
+        const portsMatch = output.match(/Open Ports:\s*(.+)/);
+        if (portsMatch && portsMatch[1] !== 'None detected') {
+          const ports = portsMatch[1].split(',').length;
+          riskScore = Math.max(riskScore, ports * 5);
+        }
+        tags.push('shodan');
+      }
+
+      // Store scan result
+      const { data: insertedScan, error: scanError } = await supabase
+        .from('cyber_arsenal_scans')
+        .insert({
+          organization_id: profile.organization_id,
+          user_id: user.id,
+          tool_name: toolId,
+          target: target,
+          target_type: targetType,
+          scan_result: { raw_output: output, parsed_at: new Date().toISOString() },
+          risk_score: riskScore,
+          is_malicious: isMalicious,
+          tags: tags,
+        })
+        .select()
+        .single();
+
+      if (scanError) {
+        console.error('[CYBER-ARSENAL] Error storing scan:', scanError);
+      } else {
+        scanRecord = insertedScan;
+        console.log('[CYBER-ARSENAL] Scan stored:', insertedScan?.id);
+      }
+    }
+
     if (profile.organization_id) {
       await supabase.from('audit_logs').insert({
         organization_id: profile.organization_id,
@@ -516,7 +596,7 @@ serve(async (req) => {
         action: 'cyber_tool_execution',
         resource_type: 'cyber_arsenal',
         resource_id: toolId,
-        details: { command, target, output_length: output.length },
+        details: { command, target, output_length: output.length, scan_id: scanRecord?.id },
         result: 'success',
       });
     }
@@ -527,6 +607,7 @@ serve(async (req) => {
       command,
       target,
       output,
+      scanId: scanRecord?.id,
       timestamp: new Date().toISOString(),
       executedBy: user.email,
     }), {

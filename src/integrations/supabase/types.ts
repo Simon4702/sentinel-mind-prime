@@ -190,6 +190,59 @@ export type Database = {
           },
         ]
       }
+      cyber_arsenal_scans: {
+        Row: {
+          created_at: string
+          id: string
+          is_malicious: boolean | null
+          organization_id: string | null
+          risk_score: number | null
+          scan_result: Json
+          tags: string[] | null
+          target: string
+          target_type: string
+          tool_name: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_malicious?: boolean | null
+          organization_id?: string | null
+          risk_score?: number | null
+          scan_result?: Json
+          tags?: string[] | null
+          target: string
+          target_type: string
+          tool_name: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_malicious?: boolean | null
+          organization_id?: string | null
+          risk_score?: number | null
+          scan_result?: Json
+          tags?: string[] | null
+          target?: string
+          target_type?: string
+          tool_name?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "cyber_arsenal_scans_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       dark_web_alerts: {
         Row: {
           affected_assets: Json | null
