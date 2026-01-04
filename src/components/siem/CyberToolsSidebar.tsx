@@ -16,11 +16,12 @@ import {
   ChevronRight,
   Play,
   Square,
-  Settings,
-  X,
   Loader2,
   Send,
   Trash2,
+  Search,
+  Eye,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -35,7 +36,6 @@ import {
 import {
   Dialog,
   DialogContent,
-  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -49,12 +49,15 @@ interface CyberTool {
   name: string;
   shortName: string;
   icon: React.ElementType;
-  category: "offensive" | "defensive" | "recon" | "forensics";
+  category: "offensive" | "defensive" | "recon" | "forensics" | "intel";
   status: "active" | "standby" | "offline";
   description: string;
   version: string;
   lastRun?: string;
   commands: string[];
+  requiresTarget?: boolean;
+  targetPlaceholder?: string;
+  isRealApi?: boolean;
 }
 
 interface TerminalLine {
@@ -64,6 +67,50 @@ interface TerminalLine {
 }
 
 const cyberTools: CyberTool[] = [
+  // Real API integrations
+  {
+    id: "virustotal",
+    name: "VirusTotal",
+    shortName: "VT",
+    icon: Eye,
+    category: "intel",
+    status: "active",
+    description: "Analyze files, domains, IPs and URLs for malware",
+    version: "API v3",
+    commands: ["scan ip", "scan domain", "scan hash"],
+    requiresTarget: true,
+    targetPlaceholder: "Enter IP, domain, or file hash",
+    isRealApi: true,
+  },
+  {
+    id: "abuseipdb",
+    name: "AbuseIPDB",
+    shortName: "ABUSE",
+    icon: AlertTriangle,
+    category: "intel",
+    status: "active",
+    description: "Check IP reputation and abuse reports",
+    version: "API v2",
+    commands: ["check ip", "report ip"],
+    requiresTarget: true,
+    targetPlaceholder: "Enter IP address (e.g., 8.8.8.8)",
+    isRealApi: true,
+  },
+  {
+    id: "shodan",
+    name: "Shodan",
+    shortName: "SHDN",
+    icon: Search,
+    category: "intel",
+    status: "active",
+    description: "Search engine for Internet-connected devices",
+    version: "API",
+    commands: ["host lookup", "search query"],
+    requiresTarget: true,
+    targetPlaceholder: "Enter IP or search query",
+    isRealApi: true,
+  },
+  // Simulated tools
   {
     id: "kali",
     name: "Kali Linux",
@@ -73,7 +120,6 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "Penetration testing & ethical hacking distribution",
     version: "2024.1",
-    lastRun: "2 hours ago",
     commands: ["aircrack-ng -w wordlist.txt capture.cap", "hydra -l admin -P passwords.txt ssh://target"],
   },
   {
@@ -85,7 +131,6 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "Exploitation framework for penetration testing",
     version: "6.3.44",
-    lastRun: "45 min ago",
     commands: ["use exploit/multi/handler", "search cve:2024"],
   },
   {
@@ -97,8 +142,9 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "Network discovery & security auditing tool",
     version: "7.94",
-    lastRun: "10 min ago",
     commands: ["nmap -sS -sV target", "nmap --script vuln target"],
+    requiresTarget: true,
+    targetPlaceholder: "Enter target IP or hostname",
   },
   {
     id: "wireshark",
@@ -120,8 +166,9 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "Web application security testing platform",
     version: "2024.1.1",
-    lastRun: "1 hour ago",
     commands: ["spider target", "active scan"],
+    requiresTarget: true,
+    targetPlaceholder: "Enter target URL",
   },
   {
     id: "hashcat",
@@ -143,7 +190,6 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "Digital forensics platform for evidence analysis",
     version: "4.21.0",
-    lastRun: "3 hours ago",
     commands: ["new case", "run ingest modules"],
   },
   {
@@ -166,7 +212,6 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "Network intrusion detection & prevention system",
     version: "3.1.58",
-    lastRun: "Running",
     commands: ["snort -A console", "snort -c snort.conf"],
   },
   {
@@ -178,7 +223,6 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "SQL-powered endpoint visibility platform",
     version: "5.11.0",
-    lastRun: "Running",
     commands: ["SELECT * FROM processes;", "SELECT * FROM listening_ports;"],
   },
   {
@@ -190,7 +234,6 @@ const cyberTools: CyberTool[] = [
     status: "active",
     description: "Network security monitor & traffic analyzer",
     version: "6.2.0",
-    lastRun: "Running",
     commands: ["zeekctl deploy", "zeekctl status"],
   },
   {
@@ -211,6 +254,7 @@ const categoryColors = {
   defensive: "from-emerald-500/20 to-cyan-500/20 border-emerald-500/30 text-emerald-400",
   recon: "from-blue-500/20 to-purple-500/20 border-blue-500/30 text-blue-400",
   forensics: "from-amber-500/20 to-yellow-500/20 border-amber-500/30 text-amber-400",
+  intel: "from-violet-500/20 to-purple-500/20 border-violet-500/30 text-violet-400",
 };
 
 const categoryBgColors = {
@@ -218,6 +262,7 @@ const categoryBgColors = {
   defensive: "bg-emerald-500/10 border-emerald-500/30",
   recon: "bg-blue-500/10 border-blue-500/30",
   forensics: "bg-amber-500/10 border-amber-500/30",
+  intel: "bg-violet-500/10 border-violet-500/30",
 };
 
 const statusColors = {
@@ -237,19 +282,20 @@ export const CyberToolsSidebar = () => {
   const [selectedTool, setSelectedTool] = useState<CyberTool | null>(null);
   const [terminalHistory, setTerminalHistory] = useState<TerminalLine[]>([]);
   const [currentCommand, setCurrentCommand] = useState("");
+  const [currentTarget, setCurrentTarget] = useState("");
   const [isExecuting, setIsExecuting] = useState(false);
   const [toolStatuses, setToolStatuses] = useState<Record<string, "active" | "standby" | "offline">>({});
   const terminalRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
 
   const categories = [
+    { id: "intel", label: "THREAT INTEL", icon: Eye },
     { id: "offensive", label: "OFFENSIVE", icon: Skull },
     { id: "defensive", label: "DEFENSIVE", icon: Shield },
     { id: "recon", label: "RECON", icon: Radar },
     { id: "forensics", label: "FORENSICS", icon: FileSearch },
   ] as const;
 
-  // Auto-scroll terminal
   useEffect(() => {
     if (terminalRef.current) {
       terminalRef.current.scrollTop = terminalRef.current.scrollHeight;
@@ -260,15 +306,23 @@ export const CyberToolsSidebar = () => {
     return toolStatuses[toolId] || defaultStatus;
   };
 
-  const executeCommand = async (command: string, tool: CyberTool) => {
+  const executeCommand = async (command: string, tool: CyberTool, target?: string) => {
     if (!command.trim() || isExecuting) return;
+
+    if (tool.requiresTarget && !target?.trim()) {
+      toast({
+        title: "Target Required",
+        description: `Please enter a target for ${tool.name}`,
+        variant: "destructive",
+      });
+      return;
+    }
 
     setIsExecuting(true);
     
-    // Add input line
     setTerminalHistory(prev => [...prev, {
       type: "input",
-      content: `[${tool.shortName}] $ ${command}`,
+      content: `[${tool.shortName}] $ ${command}${target ? ` → ${target}` : ''}`,
       timestamp: new Date(),
     }]);
 
@@ -289,6 +343,7 @@ export const CyberToolsSidebar = () => {
         body: {
           toolId: tool.id,
           command: command,
+          target: target?.trim(),
         },
       });
 
@@ -321,42 +376,28 @@ export const CyberToolsSidebar = () => {
       setToolStatuses(prev => ({ ...prev, [tool.id]: "active" }));
       setTerminalHistory(prev => [...prev, {
         type: "system",
-        content: `[SYSTEM] Starting ${tool.name} v${tool.version}...`,
-        timestamp: new Date(),
-      }, {
-        type: "system",
-        content: `[SYSTEM] ${tool.name} is now ONLINE and ready.`,
+        content: `[SYSTEM] ${tool.name} is now ONLINE.`,
         timestamp: new Date(),
       }]);
-      toast({
-        title: `${tool.name} Started`,
-        description: "Tool is now online and ready for commands.",
-      });
+      toast({ title: `${tool.name} Started` });
     } else if (action === "stop") {
       setToolStatuses(prev => ({ ...prev, [tool.id]: "standby" }));
       setTerminalHistory(prev => [...prev, {
         type: "system",
-        content: `[SYSTEM] Stopping ${tool.name}...`,
-        timestamp: new Date(),
-      }, {
-        type: "system",
-        content: `[SYSTEM] ${tool.name} is now in STANDBY mode.`,
+        content: `[SYSTEM] ${tool.name} is now in STANDBY.`,
         timestamp: new Date(),
       }]);
-      toast({
-        title: `${tool.name} Stopped`,
-        description: "Tool is now in standby mode.",
-      });
+      toast({ title: `${tool.name} Stopped` });
     }
   };
 
-  const clearTerminal = () => {
-    setTerminalHistory([]);
-  };
+  const clearTerminal = () => setTerminalHistory([]);
 
   const handleQuickCommand = (cmd: string, tool: CyberTool) => {
     setCurrentCommand(cmd);
-    executeCommand(cmd, tool);
+    if (!tool.requiresTarget) {
+      executeCommand(cmd, tool);
+    }
   };
 
   return (
@@ -367,7 +408,6 @@ export const CyberToolsSidebar = () => {
           isCollapsed ? "w-14" : "w-56"
         )}
       >
-        {/* Military-grade header */}
         <div className="p-2 border-b border-border/50 bg-gradient-to-r from-red-500/10 via-transparent to-transparent">
           <div className="flex items-center justify-between">
             {!isCollapsed && (
@@ -384,11 +424,7 @@ export const CyberToolsSidebar = () => {
               className="h-6 w-6 text-muted-foreground hover:text-foreground"
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
-              {isCollapsed ? (
-                <ChevronRight className="h-3 w-3" />
-              ) : (
-                <ChevronLeft className="h-3 w-3" />
-              )}
+              {isCollapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
             </Button>
           </div>
         </div>
@@ -417,9 +453,10 @@ export const CyberToolsSidebar = () => {
                             <button
                               onClick={() => {
                                 setSelectedTool(tool);
+                                setCurrentTarget("");
                                 setTerminalHistory([{
                                   type: "system",
-                                  content: `[SYSTEM] ${tool.name} v${tool.version} terminal initialized`,
+                                  content: `[SYSTEM] ${tool.name} ${tool.version} terminal initialized${tool.isRealApi ? ' (LIVE API)' : ''}`,
                                   timestamp: new Date(),
                                 }]);
                               }}
@@ -432,35 +469,37 @@ export const CyberToolsSidebar = () => {
                               )}
                             >
                               <div className="relative flex-shrink-0">
-                                <tool.icon
-                                  className={cn(
-                                    "h-3.5 w-3.5 transition-transform group-hover:scale-110",
-                                    tool.category === "offensive" && "text-red-400",
-                                    tool.category === "defensive" && "text-emerald-400",
-                                    tool.category === "recon" && "text-blue-400",
-                                    tool.category === "forensics" && "text-amber-400"
-                                  )}
-                                />
-                                <div
-                                  className={cn(
-                                    "absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full",
-                                    statusColors[currentStatus]
-                                  )}
-                                />
+                                <tool.icon className={cn(
+                                  "h-3.5 w-3.5 transition-transform group-hover:scale-110",
+                                  tool.category === "offensive" && "text-red-400",
+                                  tool.category === "defensive" && "text-emerald-400",
+                                  tool.category === "recon" && "text-blue-400",
+                                  tool.category === "forensics" && "text-amber-400",
+                                  tool.category === "intel" && "text-violet-400"
+                                )} />
+                                <div className={cn(
+                                  "absolute -top-0.5 -right-0.5 w-1.5 h-1.5 rounded-full",
+                                  statusColors[currentStatus]
+                                )} />
                               </div>
                               {!isCollapsed && (
-                                <span className="text-[10px] font-mono font-semibold truncate text-foreground">
-                                  {tool.shortName}
-                                </span>
+                                <div className="flex items-center gap-1">
+                                  <span className="text-[10px] font-mono font-semibold truncate text-foreground">
+                                    {tool.shortName}
+                                  </span>
+                                  {tool.isRealApi && (
+                                    <span className="text-[7px] px-1 py-0.5 bg-violet-500/30 text-violet-300 rounded font-mono">
+                                      LIVE
+                                    </span>
+                                  )}
+                                </div>
                               )}
                             </button>
                           </TooltipTrigger>
                           <TooltipContent side="right" className="font-mono text-xs">
                             <p className="font-bold">{tool.name}</p>
-                            <p className="text-muted-foreground text-[10px]">
-                              {tool.description}
-                            </p>
-                            <p className="text-primary text-[10px] mt-1">Click to open terminal</p>
+                            <p className="text-muted-foreground text-[10px]">{tool.description}</p>
+                            {tool.isRealApi && <p className="text-violet-400 text-[10px] mt-1">🔴 LIVE API Integration</p>}
                           </TooltipContent>
                         </Tooltip>
                       );
@@ -470,7 +509,6 @@ export const CyberToolsSidebar = () => {
             ))}
           </div>
 
-          {/* Status footer */}
           {!isCollapsed && (
             <div className="p-2 border-t border-border/50 mt-2">
               <div className="grid grid-cols-3 gap-1 text-center">
@@ -486,11 +524,11 @@ export const CyberToolsSidebar = () => {
                   </div>
                   <div className="text-[8px] font-mono text-amber-400/60">SBY</div>
                 </div>
-                <div className="p-1 rounded bg-red-500/10 border border-red-500/20">
-                  <div className="text-sm font-bold text-red-400">
-                    {cyberTools.filter((t) => getToolStatus(t.id, t.status) === "offline").length}
+                <div className="p-1 rounded bg-violet-500/10 border border-violet-500/20">
+                  <div className="text-sm font-bold text-violet-400">
+                    {cyberTools.filter((t) => t.isRealApi).length}
                   </div>
-                  <div className="text-[8px] font-mono text-red-400/60">OFF</div>
+                  <div className="text-[8px] font-mono text-violet-400/60">LIVE</div>
                 </div>
               </div>
             </div>
@@ -498,12 +536,10 @@ export const CyberToolsSidebar = () => {
         </ScrollArea>
       </div>
 
-      {/* Tool Terminal Modal */}
       <Dialog open={!!selectedTool} onOpenChange={() => setSelectedTool(null)}>
-        <DialogContent className="max-w-3xl h-[600px] border-primary/30 bg-black/95 p-0 flex flex-col">
+        <DialogContent className="max-w-3xl h-[650px] border-primary/30 bg-black/95 p-0 flex flex-col">
           {selectedTool && (
             <>
-              {/* Terminal Header */}
               <div className="flex items-center justify-between px-4 py-2 border-b border-emerald-500/30 bg-gradient-to-r from-emerald-500/10 to-transparent">
                 <div className="flex items-center gap-3">
                   <div className={cn("p-2 rounded-lg border", categoryBgColors[selectedTool.category])}>
@@ -512,26 +548,31 @@ export const CyberToolsSidebar = () => {
                       selectedTool.category === "offensive" && "text-red-400",
                       selectedTool.category === "defensive" && "text-emerald-400",
                       selectedTool.category === "recon" && "text-blue-400",
-                      selectedTool.category === "forensics" && "text-amber-400"
+                      selectedTool.category === "forensics" && "text-amber-400",
+                      selectedTool.category === "intel" && "text-violet-400"
                     )} />
                   </div>
                   <div>
                     <div className="font-mono text-sm font-bold text-emerald-400 flex items-center gap-2">
                       {selectedTool.name}
+                      {selectedTool.isRealApi && (
+                        <Badge variant="outline" className="text-[9px] font-mono h-4 border-violet-500/50 text-violet-400 bg-violet-500/10">
+                          🔴 LIVE API
+                        </Badge>
+                      )}
                       <Badge 
                         variant="outline" 
                         className={cn(
                           "text-[9px] font-mono h-4",
                           getToolStatus(selectedTool.id, selectedTool.status) === "active" && "border-emerald-500/50 text-emerald-400",
-                          getToolStatus(selectedTool.id, selectedTool.status) === "standby" && "border-amber-500/50 text-amber-400",
-                          getToolStatus(selectedTool.id, selectedTool.status) === "offline" && "border-red-500/50 text-red-400"
+                          getToolStatus(selectedTool.id, selectedTool.status) === "standby" && "border-amber-500/50 text-amber-400"
                         )}
                       >
                         {statusLabels[getToolStatus(selectedTool.id, selectedTool.status)]}
                       </Badge>
                     </div>
                     <div className="text-[10px] font-mono text-muted-foreground">
-                      v{selectedTool.version} | {selectedTool.description}
+                      {selectedTool.version} | {selectedTool.description}
                     </div>
                   </div>
                 </div>
@@ -542,8 +583,7 @@ export const CyberToolsSidebar = () => {
                       className="h-7 text-xs font-mono bg-emerald-600 hover:bg-emerald-700"
                       onClick={() => handleToolAction("start", selectedTool)}
                     >
-                      <Play className="h-3 w-3 mr-1" />
-                      START
+                      <Play className="h-3 w-3 mr-1" /> START
                     </Button>
                   ) : (
                     <Button 
@@ -552,22 +592,15 @@ export const CyberToolsSidebar = () => {
                       className="h-7 text-xs font-mono"
                       onClick={() => handleToolAction("stop", selectedTool)}
                     >
-                      <Square className="h-3 w-3 mr-1" />
-                      STOP
+                      <Square className="h-3 w-3 mr-1" /> STOP
                     </Button>
                   )}
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-7 w-7"
-                    onClick={clearTerminal}
-                  >
+                  <Button size="icon" variant="ghost" className="h-7 w-7" onClick={clearTerminal}>
                     <Trash2 className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
 
-              {/* Terminal Tabs */}
               <Tabs defaultValue="terminal" className="flex-1 flex flex-col">
                 <TabsList className="mx-4 mt-2 bg-black/50 font-mono text-xs">
                   <TabsTrigger value="terminal">Terminal</TabsTrigger>
@@ -575,14 +608,24 @@ export const CyberToolsSidebar = () => {
                 </TabsList>
 
                 <TabsContent value="terminal" className="flex-1 flex flex-col m-0 p-4 pt-2">
-                  {/* Terminal Output */}
+                  {selectedTool.requiresTarget && (
+                    <div className="mb-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-mono text-muted-foreground">TARGET:</span>
+                        <Input
+                          value={currentTarget}
+                          onChange={(e) => setCurrentTarget(e.target.value)}
+                          placeholder={selectedTool.targetPlaceholder}
+                          className="flex-1 h-8 bg-black/50 border-violet-500/30 font-mono text-xs text-violet-400 placeholder:text-violet-400/30"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div 
                     ref={terminalRef}
                     className="flex-1 bg-black rounded-lg border border-emerald-500/20 p-3 font-mono text-xs overflow-auto"
-                    style={{ 
-                      textShadow: "0 0 5px rgba(34, 197, 94, 0.5)",
-                      boxShadow: "inset 0 0 30px rgba(0,0,0,0.5)"
-                    }}
+                    style={{ textShadow: "0 0 5px rgba(34, 197, 94, 0.5)" }}
                   >
                     {terminalHistory.map((line, i) => (
                       <div 
@@ -601,12 +644,13 @@ export const CyberToolsSidebar = () => {
                     {isExecuting && (
                       <div className="flex items-center gap-2 text-emerald-400">
                         <Loader2 className="h-3 w-3 animate-spin" />
-                        <span className="animate-pulse">Processing...</span>
+                        <span className="animate-pulse">
+                          {selectedTool.isRealApi ? 'Querying live API...' : 'Processing...'}
+                        </span>
                       </div>
                     )}
                   </div>
 
-                  {/* Command Input */}
                   <div className="flex items-center gap-2 mt-2">
                     <span className="text-emerald-400 font-mono text-xs">[{selectedTool.shortName}] $</span>
                     <Input
@@ -614,51 +658,45 @@ export const CyberToolsSidebar = () => {
                       onChange={(e) => setCurrentCommand(e.target.value)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" && !isExecuting) {
-                          executeCommand(currentCommand, selectedTool);
+                          executeCommand(currentCommand, selectedTool, currentTarget);
                         }
                       }}
                       placeholder="Enter command..."
                       className="flex-1 bg-black/50 border-emerald-500/30 font-mono text-xs text-emerald-400 placeholder:text-emerald-400/30"
-                      disabled={isExecuting || getToolStatus(selectedTool.id, selectedTool.status) === "offline"}
+                      disabled={isExecuting}
                     />
                     <Button
                       size="icon"
                       className="h-8 w-8 bg-emerald-600 hover:bg-emerald-700"
-                      onClick={() => executeCommand(currentCommand, selectedTool)}
+                      onClick={() => executeCommand(currentCommand, selectedTool, currentTarget)}
                       disabled={isExecuting || !currentCommand.trim()}
                     >
-                      {isExecuting ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Send className="h-3 w-3" />
-                      )}
+                      {isExecuting ? <Loader2 className="h-3 w-3 animate-spin" /> : <Send className="h-3 w-3" />}
                     </Button>
                   </div>
                 </TabsContent>
 
-                <TabsContent value="commands" className="flex-1 m-0 p-4 pt-2">
-                  <div className="space-y-2">
-                    <p className="text-[10px] font-mono text-muted-foreground mb-3">
-                      QUICK COMMANDS - Click to execute
-                    </p>
-                    <div className="grid grid-cols-1 gap-2">
-                      {selectedTool.commands.map((cmd, i) => (
-                        <button
-                          key={i}
-                          onClick={() => handleQuickCommand(cmd, selectedTool)}
-                          disabled={isExecuting || getToolStatus(selectedTool.id, selectedTool.status) === "offline"}
-                          className={cn(
-                            "w-full text-left px-3 py-2 rounded-md font-mono text-xs",
-                            "bg-black/50 border border-emerald-500/20",
-                            "hover:bg-emerald-500/10 hover:border-emerald-500/40",
-                            "transition-all duration-200",
-                            "disabled:opacity-50 disabled:cursor-not-allowed"
-                          )}
-                        >
-                          <code className="text-emerald-400">$ {cmd}</code>
-                        </button>
-                      ))}
-                    </div>
+                <TabsContent value="commands" className="flex-1 m-0 p-4 pt-2 overflow-auto">
+                  <p className="text-[10px] font-mono text-muted-foreground mb-3">
+                    QUICK COMMANDS - Click to {selectedTool.requiresTarget ? 'load' : 'execute'}
+                  </p>
+                  <div className="grid grid-cols-1 gap-2">
+                    {selectedTool.commands.map((cmd, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleQuickCommand(cmd, selectedTool)}
+                        disabled={isExecuting}
+                        className={cn(
+                          "w-full text-left px-3 py-2 rounded-md font-mono text-xs",
+                          "bg-black/50 border border-emerald-500/20",
+                          "hover:bg-emerald-500/10 hover:border-emerald-500/40",
+                          "transition-all duration-200",
+                          "disabled:opacity-50"
+                        )}
+                      >
+                        <code className="text-emerald-400">$ {cmd}</code>
+                      </button>
+                    ))}
                   </div>
                 </TabsContent>
               </Tabs>
