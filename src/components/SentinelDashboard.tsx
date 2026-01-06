@@ -6,6 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { 
   Shield, 
   TrendingUp, 
+  Users, 
   AlertTriangle, 
   Target, 
   Brain,
@@ -13,24 +14,17 @@ import {
   Zap,
   BarChart3,
   Activity,
-  Radio,
-  Radar,
-  Crosshair,
-  Lock
+  Radio
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useRealtimeThreats } from "@/hooks/useRealtimeThreats";
 import { Link } from "react-router-dom";
-import { 
-  DefconStatus, 
-  ThreatLevelBar, 
-  SecurityControlsPanel, 
-  LiveAuditTrail,
-  TacticalMetricsGrid 
-} from "@/components/tactical";
+import heroCyber from "@/assets/hero-cyber.jpg";
+import { UserProfileDropdown } from "@/components/UserProfileDropdown";
+import { Navigation } from "@/components/Navigation";
 
 export const SentinelDashboard = () => {
-  const { profile } = useAuth();
+  const { profile, signOut } = useAuth();
   const { threats, incidents, alerts, stats, loading } = useRealtimeThreats();
 
   const getThreatLevel = () => {
@@ -41,21 +35,20 @@ export const SentinelDashboard = () => {
   };
 
   const threatLevel = getThreatLevel();
-  const currentTime = new Date().toISOString().replace('T', ' ').substring(0, 19) + 'Z';
-
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Tactical Grid Background */}
+    <div className="min-h-screen bg-background relative overflow-hidden">
+      {/* Cyber Shield Background */}
       <div className="fixed inset-0 pointer-events-none z-0">
         <svg 
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-[0.03] w-[1000px] h-[1000px]" 
+          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-5 w-[800px] h-[800px]" 
           viewBox="0 0 400 400" 
           fill="none"
         >
           <defs>
             <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stopColor="hsl(120, 60%, 40%)" stopOpacity="0.5" />
-              <stop offset="100%" stopColor="hsl(45, 100%, 50%)" stopOpacity="0.2" />
+              <stop offset="0%" stopColor="hsl(195, 100%, 50%)" stopOpacity="0.3" />
+              <stop offset="50%" stopColor="hsl(180, 100%, 50%)" stopOpacity="0.2" />
+              <stop offset="100%" stopColor="hsl(195, 100%, 50%)" stopOpacity="0.1" />
             </linearGradient>
           </defs>
           <path 
@@ -64,210 +57,296 @@ export const SentinelDashboard = () => {
             strokeWidth="2" 
             fill="url(#shieldGradient)"
           />
-          <circle cx="200" cy="180" r="60" stroke="hsl(120, 60%, 40%)" strokeWidth="1" fill="none" opacity="0.2" />
-          <circle cx="200" cy="180" r="40" stroke="hsl(120, 60%, 40%)" strokeWidth="1" fill="none" opacity="0.3" />
-          <circle cx="200" cy="180" r="20" stroke="hsl(120, 60%, 40%)" strokeWidth="1" fill="none" opacity="0.4" />
-          {/* Crosshair */}
-          <line x1="140" y1="180" x2="260" y2="180" stroke="hsl(45, 100%, 50%)" strokeWidth="0.5" opacity="0.3" />
-          <line x1="200" y1="120" x2="200" y2="240" stroke="hsl(45, 100%, 50%)" strokeWidth="0.5" opacity="0.3" />
+          <path 
+            d="M200 80 L290 115 L290 190 Q290 250 200 310 Q110 250 110 190 L110 115 Z" 
+            stroke="hsl(195, 100%, 50%)" 
+            strokeWidth="1" 
+            fill="none" 
+            opacity="0.3"
+          />
+          <circle cx="200" cy="180" r="40" stroke="hsl(195, 100%, 50%)" strokeWidth="1" fill="none" opacity="0.2" />
+          <path d="M185 175 L195 185 L215 165" stroke="hsl(195, 100%, 50%)" strokeWidth="2" fill="none" opacity="0.4" />
         </svg>
       </div>
 
-      {/* Command Center Header */}
-      <div className="relative z-10 border-b border-accent/20 bg-black/40 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-4">
+      {/* Top Navigation */}
+      <nav className="border-b border-primary/20 bg-card/50 backdrop-blur-sm relative z-10">
+        <div className="container mx-auto px-4 py-4 max-w-6xl">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2">
-                <Crosshair className="h-5 w-5 text-primary animate-tactical-pulse" />
-                <span className="font-tactical text-sm tracking-widest text-primary">COMMAND CENTER</span>
+            <div className="flex items-center gap-3">
+              <Shield className="h-8 w-8 text-primary" />
+              <div>
+                <h1 className="text-xl font-bold">SentinelMind</h1>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.department || 'Security Platform'}
+                </p>
               </div>
-              <ThreatLevelBar className="w-32" />
             </div>
-            <div className="flex items-center gap-4 text-xs font-mono text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <Radio className="h-3 w-3 text-success animate-tactical-pulse" />
-                LIVE FEED
-              </span>
-              <span>{currentTime}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Tactical Metrics */}
-      <div className="relative z-10 px-4 py-6">
-        <div className="container mx-auto">
-          <TacticalMetricsGrid />
-        </div>
-      </div>
-
-      {/* Main Operations Grid */}
-      <div className="relative z-10 px-4 pb-8">
-        <div className="container mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
             
-            {/* Left Column - DEFCON & Security Controls */}
-            <div className="lg:col-span-3 space-y-6">
-              <DefconStatus />
-              <SecurityControlsPanel />
-            </div>
-
-            {/* Center Column - Threat Feed & Training */}
-            <div className="lg:col-span-6 space-y-6">
-              {/* Recent Threats */}
-              <Card className="tactical-card">
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="font-tactical text-sm tracking-wider flex items-center gap-2">
-                      <Radar className="h-4 w-4 text-primary animate-radar-sweep" />
-                      THREAT INTELLIGENCE FEED
-                    </CardTitle>
-                    <div className="flex items-center gap-2">
-                      <Radio className="h-3 w-3 text-success animate-tactical-pulse" />
-                      <span className="text-[10px] font-mono text-success">LIVE</span>
-                    </div>
-                  </div>
-                  <p className="text-[10px] font-mono text-muted-foreground mt-1">
-                    REAL-TIME THREAT DETECTION • LAST UPDATE: {currentTime}
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    {loading ? (
-                      <>
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-16 w-full" />
-                        <Skeleton className="h-16 w-full" />
-                      </>
-                    ) : threats.length === 0 ? (
-                      <div className="text-center py-12 text-muted-foreground">
-                        <Shield className="h-16 w-16 mx-auto mb-3 opacity-30" />
-                        <p className="font-tactical text-sm tracking-wider">NO ACTIVE THREATS</p>
-                        <p className="text-[10px] font-mono mt-1">ALL SECTORS CLEAR</p>
-                      </div>
-                    ) : (
-                      threats.slice(0, 5).map((threat) => (
-                        <div 
-                          key={threat.id} 
-                          className={`flex items-center justify-between p-3 rounded-sm border transition-all hover:bg-muted/30 ${
-                            threat.severity === 'critical' ? 'border-destructive/40 bg-destructive/5' :
-                            threat.severity === 'high' ? 'border-warning/40 bg-warning/5' :
-                            'border-border'
-                          }`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-2 h-8 rounded-sm ${
-                              threat.severity === 'critical' ? 'bg-destructive animate-tactical-pulse' :
-                              threat.severity === 'high' ? 'bg-warning' :
-                              'bg-accent'
-                            }`} />
-                            <div>
-                              <p className="font-mono text-sm uppercase">{threat.threat_type}</p>
-                              <p className="text-[10px] font-mono text-muted-foreground truncate max-w-xs">
-                                {threat.indicator_type}: {threat.indicator_value}
-                              </p>
-                            </div>
-                          </div>
-                          <Badge 
-                            className={`font-tactical text-[10px] tracking-wider ${
-                              threat.severity === 'critical' ? 'bg-destructive text-white' :
-                              threat.severity === 'high' ? 'bg-warning text-black' :
-                              'bg-accent/20 text-accent border-accent/30'
-                            }`}
-                          >
-                            {threat.severity?.toUpperCase()}
-                          </Badge>
-                        </div>
-                      ))
-                    )}
-                  </div>
-
-                  <div className="mt-4 pt-4 border-t border-border flex justify-between">
-                    <Button variant="outline" size="sm" className="btn-tactical text-[10px]" asChild>
-                      <Link to="/threat-monitoring">
-                        <Eye className="h-3 w-3 mr-1" />
-                        VIEW ALL THREATS
-                      </Link>
-                    </Button>
-                    <Button variant="outline" size="sm" className="btn-tactical text-[10px]" asChild>
-                      <Link to="/incident-response">
-                        <AlertTriangle className="h-3 w-3 mr-1" />
-                        INCIDENT RESPONSE
-                      </Link>
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Quick Actions */}
-              <div className="grid grid-cols-3 gap-4">
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex-col gap-2 btn-tactical"
-                  asChild
-                >
-                  <Link to="/behavior-engine">
-                    <Brain className="h-6 w-6" />
-                    <span className="text-[10px] tracking-widest">BEHAVIORAL</span>
-                  </Link>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex-col gap-2 btn-tactical"
-                  asChild
-                >
-                  <Link to="/siem">
-                    <Activity className="h-6 w-6" />
-                    <span className="text-[10px] tracking-widest">SIEM</span>
-                  </Link>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="h-20 flex-col gap-2 btn-tactical"
-                  asChild
-                >
-                  <Link to="/advanced-security">
-                    <Zap className="h-6 w-6" />
-                    <span className="text-[10px] tracking-widest">ARSENAL</span>
-                  </Link>
-                </Button>
-              </div>
-
-              {/* Analytics Summary */}
-              <Card className="tactical-card">
-                <CardHeader className="pb-3">
-                  <CardTitle className="font-tactical text-sm tracking-wider flex items-center gap-2">
-                    <BarChart3 className="h-4 w-4 text-primary" />
-                    OPERATIONAL METRICS
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="text-center p-4 border border-success/20 rounded-sm bg-success/5">
-                      <h3 className="text-2xl font-tactical font-bold text-success">99.7%</h3>
-                      <p className="text-[10px] font-mono text-muted-foreground mt-1">DETECTION RATE</p>
-                    </div>
-                    
-                    <div className="text-center p-4 border border-primary/20 rounded-sm bg-primary/5">
-                      <h3 className="text-2xl font-tactical font-bold text-primary">2.3s</h3>
-                      <p className="text-[10px] font-mono text-muted-foreground mt-1">AVG RESPONSE</p>
-                    </div>
-                    
-                    <div className="text-center p-4 border border-accent/20 rounded-sm bg-accent/5">
-                      <h3 className="text-2xl font-tactical font-bold text-accent">847</h3>
-                      <p className="text-[10px] font-mono text-muted-foreground mt-1">BLOCKED TODAY</p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Right Column - Audit Trail */}
-            <div className="lg:col-span-3">
-              <LiveAuditTrail />
+            <div className="flex items-center gap-4">
+              <UserProfileDropdown />
             </div>
           </div>
+        </div>
+      </nav>
+
+      {/* Navigation Menu */}
+      <div className="relative z-10">
+        <Navigation />
+      </div>
+
+      {/* Hero Section */}
+      <div className="relative overflow-hidden z-10">
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-20"
+          style={{ backgroundImage: `url(${heroCyber})` }}
+        />
+        <div className="absolute inset-0 bg-gradient-cyber opacity-80" />
+        <div className="relative px-4 py-20 text-center">
+          <div className="container mx-auto max-w-4xl">
+            <h1 className="text-5xl font-bold bg-gradient-primary bg-clip-text text-transparent mb-6">
+              SentinelMind
+            </h1>
+            <p className="text-xl text-muted-foreground mb-8">
+              Elite Behavioral Cyber Defense Platform
+            </p>
+            <div className="flex justify-center gap-4 flex-wrap">
+              <Button variant="default" size="lg" className="shadow-cyber" asChild>
+                <a href="/behavior-engine">
+                  <Brain className="mr-2 h-5 w-5" />
+                  Analyze Behavior
+                </a>
+              </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <a href="/threat-monitoring">
+                    <Eye className="mr-2 h-5 w-5" />
+                    Monitor Threats
+                  </a>
+                </Button>
+                <Button variant="outline" size="lg" asChild>
+                  <a href="/phishing-training">
+                    <Target className="mr-2 h-5 w-5" />
+                    Phishing Training
+                  </a>
+                </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Dashboard */}
+      <div className="px-4 py-12 relative z-10">
+        <div className="container mx-auto max-w-6xl">
+          {/* Status Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+            <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  Threat Level
+                  <Radio className="h-3 w-3 text-success animate-pulse" />
+                </CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-24" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <threatLevel.icon className={`h-5 w-5 ${threatLevel.color}`} />
+                    <span className={`text-2xl font-bold ${threatLevel.color}`}>{threatLevel.level}</span>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <Badge variant="outline" className={`border-${threatLevel.color.replace('text-', '')}/20 ${threatLevel.color}`}>
+                  {stats.activeThreats} Active Threats
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Open Incidents</CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-5 w-5 text-warning" />
+                    <span className="text-2xl font-bold">{stats.openIncidents}</span>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <span className="text-sm text-muted-foreground">Real-time monitoring</span>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Unresolved Alerts</CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Target className="h-5 w-5 text-warning" />
+                    <span className="text-2xl font-bold">{stats.unresolvedAlerts}</span>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <Badge variant="outline" className="border-warning/20 text-warning">
+                  Requires Attention
+                </Badge>
+              </CardContent>
+            </Card>
+
+            <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">Critical Threats</CardTitle>
+                {loading ? (
+                  <Skeleton className="h-8 w-16" />
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-5 w-5 text-destructive" />
+                    <span className="text-2xl font-bold">{stats.criticalThreats}</span>
+                  </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                <Progress value={stats.criticalThreats === 0 ? 100 : Math.max(0, 100 - stats.criticalThreats * 10)} className="h-2" />
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-12">
+            {/* Recent Threats */}
+            <Card className="lg:col-span-2 border-primary/20 bg-gradient-cyber shadow-elegant">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Activity className="h-5 w-5 text-primary" />
+                  Recent Threat Intelligence
+                  <Radio className="h-3 w-3 text-success animate-pulse ml-auto" />
+                </CardTitle>
+                <CardDescription>Real-time threat detection feed</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {loading ? (
+                    <>
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                      <Skeleton className="h-16 w-full" />
+                    </>
+                  ) : threats.length === 0 ? (
+                    <div className="text-center py-8 text-muted-foreground">
+                      <Shield className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                      <p>No active threats detected</p>
+                    </div>
+                  ) : (
+                    threats.slice(0, 5).map((threat) => (
+                      <div 
+                        key={threat.id} 
+                        className={`flex items-center justify-between p-3 rounded-lg bg-muted/50 border ${
+                          threat.severity === 'critical' ? 'border-destructive/40' :
+                          threat.severity === 'high' ? 'border-warning/40' :
+                          'border-primary/20'
+                        }`}
+                      >
+                        <div>
+                          <p className="font-medium">{threat.threat_type}</p>
+                          <p className="text-sm text-muted-foreground truncate max-w-xs">
+                            {threat.indicator_type}: {threat.indicator_value}
+                          </p>
+                        </div>
+                        <Badge 
+                          variant="outline" 
+                          className={
+                            threat.severity === 'critical' ? 'border-destructive/40 text-destructive' :
+                            threat.severity === 'high' ? 'border-warning/40 text-warning' :
+                            'border-primary/40 text-primary'
+                          }
+                        >
+                          {threat.severity}
+                        </Badge>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Training Center */}
+            <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="h-5 w-5 text-accent" />
+                  Training Center
+                </CardTitle>
+                <CardDescription>Gamified cybersecurity training</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center p-4 border border-accent/20 rounded-lg bg-accent/5">
+                  <h3 className="font-semibold text-accent">Active Campaign</h3>
+                  <p className="text-sm text-muted-foreground">Phishing Simulation #47</p>
+                  <Progress value={67} className="mt-2 h-2" />
+                  <p className="text-xs text-muted-foreground mt-1">67% completion rate</p>
+                </div>
+                
+                <Button variant="outline" className="w-full border-accent/20 hover:bg-accent/10">
+                  <Zap className="mr-2 h-4 w-4" />
+                  Launch New Campaign
+                </Button>
+                
+                <div className="space-y-2">
+                  <h4 className="font-medium">Top Performers</h4>
+                  <div className="space-y-1 text-sm">
+                    <div className="flex justify-between">
+                      <span>Emma Wilson</span>
+                      <span className="text-success">98% score</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>David Kim</span>
+                      <span className="text-success">95% score</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Lisa Garcia</span>
+                      <span className="text-success">92% score</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Analytics Overview */}
+          <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5 text-primary" />
+                Security Analytics
+              </CardTitle>
+              <CardDescription>Comprehensive security metrics and threat intelligence</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="text-center p-4 border border-success/20 rounded-lg bg-success/5">
+                  <h3 className="text-2xl font-bold text-success">99.7%</h3>
+                  <p className="text-sm text-muted-foreground">Threat Detection Rate</p>
+                </div>
+                
+                <div className="text-center p-4 border border-primary/20 rounded-lg bg-primary/5">
+                  <h3 className="text-2xl font-bold text-primary">2.3s</h3>
+                  <p className="text-sm text-muted-foreground">Avg Response Time</p>
+                </div>
+                
+                <div className="text-center p-4 border border-accent/20 rounded-lg bg-accent/5">
+                  <h3 className="text-2xl font-bold text-accent">847</h3>
+                  <p className="text-sm text-muted-foreground">Threats Prevented</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     </div>

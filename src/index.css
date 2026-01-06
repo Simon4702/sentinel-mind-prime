@@ -2,97 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   SENTINEL PRIME - Military-Grade Tactical Defense System
-   Classification: UNCLASSIFIED // FOUO
-   All colors MUST be HSL.
-═══════════════════════════════════════════════════════════════════════════ */
+/* SentinelMind Cybersecurity Design System
+Elite behavioral defense platform aesthetics
+All colors MUST be HSL.
+*/
 
 @layer base {
   :root {
-    /* Core tactical theme - deep black with tactical green/amber accents */
-    --background: 200 15% 4%;
-    --foreground: 150 10% 90%;
+    /* Core cybersecurity theme - dark with electric accents */
+    --background: 222 25% 6%;
+    --foreground: 180 100% 95%;
 
-    --card: 200 20% 6%;
-    --card-foreground: 150 10% 90%;
+    --card: 225 20% 8%;
+    --card-foreground: 180 100% 95%;
 
-    --popover: 200 20% 6%;
-    --popover-foreground: 150 10% 90%;
+    --popover: 225 20% 8%;
+    --popover-foreground: 180 100% 95%;
 
-    /* Tactical amber primary for critical elements */
-    --primary: 45 100% 50%;
-    --primary-foreground: 200 15% 4%;
-    --primary-glow: 45 100% 60%;
+    /* Electric blue primary for alerts and CTAs */
+    --primary: 195 100% 50%;
+    --primary-foreground: 222 25% 6%;
+    --primary-glow: 195 100% 60%;
 
-    /* Military green secondary */
-    --secondary: 120 30% 15%;
-    --secondary-foreground: 120 40% 75%;
+    /* Subtle secondary for supporting elements */
+    --secondary: 225 15% 15%;
+    --secondary-foreground: 180 50% 85%;
 
-    /* Muted tactical gray */
-    --muted: 200 15% 10%;
-    --muted-foreground: 150 10% 55%;
+    /* Muted elements */
+    --muted: 225 15% 12%;
+    --muted-foreground: 180 20% 65%;
 
-    /* Tactical green accent */
-    --accent: 120 60% 40%;
-    --accent-foreground: 200 15% 4%;
+    /* Accent cyan for highlights */
+    --accent: 180 100% 50%;
+    --accent-foreground: 222 25% 6%;
 
-    /* Critical threat red */
-    --destructive: 0 85% 50%;
-    --destructive-foreground: 150 10% 95%;
+    /* Danger/threat indicators */
+    --destructive: 0 75% 55%;
+    --destructive-foreground: 180 100% 95%;
 
-    /* Operational green */
-    --success: 120 70% 45%;
-    --success-foreground: 200 15% 4%;
+    /* Success/secure indicators */
+    --success: 120 65% 50%;
+    --success-foreground: 222 25% 6%;
 
-    /* Warning amber */
-    --warning: 35 100% 50%;
-    --warning-foreground: 200 15% 4%;
+    /* Warning indicators */
+    --warning: 45 90% 55%;
+    --warning-foreground: 222 25% 6%;
 
-    /* Tactical borders */
-    --border: 120 20% 20%;
-    --input: 200 15% 12%;
-    --ring: 45 100% 50%;
+    /* Borders and inputs */
+    --border: 225 15% 18%;
+    --input: 225 15% 18%;
+    --ring: 195 100% 50%;
 
-    --radius: 0.25rem;
+    --radius: 0.75rem;
 
-    /* DEFCON Colors */
-    --defcon-1: 0 90% 50%;
-    --defcon-2: 15 90% 50%;
-    --defcon-3: 45 90% 50%;
-    --defcon-4: 120 60% 45%;
-    --defcon-5: 200 70% 50%;
+    /* Gradients for premium effects */
+    --gradient-primary: linear-gradient(135deg, hsl(195 100% 50%), hsl(180 100% 50%));
+    --gradient-cyber: linear-gradient(135deg, hsl(225 20% 8%), hsl(195 100% 15%));
+    --gradient-threat: linear-gradient(135deg, hsl(0 75% 25%), hsl(15 80% 35%));
+    --gradient-secure: linear-gradient(135deg, hsl(120 65% 25%), hsl(140 70% 35%));
 
-    /* Classification Colors */
-    --classification-ts: 0 80% 45%;
-    --classification-secret: 15 90% 55%;
-    --classification-confidential: 200 70% 50%;
-    --classification-unclassified: 120 50% 40%;
+    /* Shadows and glows */
+    --shadow-cyber: 0 0 20px hsl(195 100% 50% / 0.3);
+    --shadow-threat: 0 0 20px hsl(0 75% 55% / 0.3);
+    --shadow-secure: 0 0 20px hsl(120 65% 50% / 0.3);
+    --shadow-elegant: 0 10px 30px -5px hsl(225 25% 3% / 0.8);
 
-    /* Tactical gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(45 100% 50%), hsl(35 100% 45%));
-    --gradient-tactical: linear-gradient(180deg, hsl(200 20% 8%) 0%, hsl(200 15% 4%) 100%);
-    --gradient-threat: linear-gradient(135deg, hsl(0 85% 25%), hsl(15 80% 35%));
-    --gradient-secure: linear-gradient(135deg, hsl(120 50% 20%), hsl(120 60% 30%));
-    --gradient-hud: linear-gradient(180deg, hsl(120 30% 15% / 0.8), transparent);
+    /* Animation variables */
+    --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
 
-    /* Military shadows and glows */
-    --shadow-tactical: 0 0 30px hsl(45 100% 50% / 0.2);
-    --shadow-threat: 0 0 30px hsl(0 85% 50% / 0.4);
-    --shadow-secure: 0 0 20px hsl(120 60% 40% / 0.3);
-    --shadow-hud: inset 0 1px 0 hsl(120 40% 30% / 0.3), 0 0 20px hsl(120 40% 20% / 0.2);
+    --sidebar-background: 0 0% 98%;
 
-    /* Grid overlay for HUD effect */
-    --grid-color: hsl(120 30% 25% / 0.05);
+    --sidebar-foreground: 240 5.3% 26.1%;
 
-    --sidebar-background: 200 15% 6%;
-    --sidebar-foreground: 150 10% 85%;
-    --sidebar-primary: 45 100% 50%;
-    --sidebar-primary-foreground: 200 15% 4%;
-    --sidebar-accent: 120 30% 18%;
-    --sidebar-accent-foreground: 120 40% 75%;
-    --sidebar-border: 120 20% 18%;
-    --sidebar-ring: 45 100% 50%;
+    --sidebar-primary: 240 5.9% 10%;
+
+    --sidebar-primary-foreground: 0 0% 98%;
+
+    --sidebar-accent: 240 4.8% 95.9%;
+
+    --sidebar-accent-foreground: 240 5.9% 10%;
+
+    --sidebar-border: 220 13% 91%;
+
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 222.2 84% 4.9%;
+    --foreground: 210 40% 98%;
+
+    --card: 222.2 84% 4.9%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222.2 84% 4.9%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 210 40% 98%;
+    --primary-foreground: 222.2 47.4% 11.2%;
+
+    --secondary: 217.2 32.6% 17.5%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217.2 32.6% 17.5%;
+    --muted-foreground: 215 20.2% 65.1%;
+
+    --accent: 217.2 32.6% 17.5%;
+    --accent-foreground: 210 40% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217.2 32.6% 17.5%;
+    --input: 217.2 32.6% 17.5%;
+    --ring: 212.7 26.8% 83.9%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
   }
 }
 
@@ -102,250 +133,6 @@
   }
 
   body {
-    @apply bg-background text-foreground font-mono;
-    font-family: 'JetBrains Mono', 'Share Tech Mono', monospace;
-  }
-
-  /* Tactical heading styles */
-  h1, h2, h3 {
-    font-family: 'Orbitron', sans-serif;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-  }
-
-  /* Scanline effect for HUD elements */
-  .scanline {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .scanline::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: repeating-linear-gradient(
-      0deg,
-      transparent,
-      transparent 2px,
-      hsl(120 30% 20% / 0.03) 2px,
-      hsl(120 30% 20% / 0.03) 4px
-    );
-    pointer-events: none;
-  }
-
-  /* Grid overlay */
-  .tactical-grid {
-    background-image: 
-      linear-gradient(var(--grid-color) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-    background-size: 20px 20px;
-  }
-
-  /* HUD corner brackets */
-  .hud-bracket {
-    position: relative;
-  }
-
-  .hud-bracket::before,
-  .hud-bracket::after {
-    content: '';
-    position: absolute;
-    width: 12px;
-    height: 12px;
-    border-color: hsl(var(--accent));
-    opacity: 0.6;
-  }
-
-  .hud-bracket::before {
-    top: 0;
-    left: 0;
-    border-top: 2px solid;
-    border-left: 2px solid;
-  }
-
-  .hud-bracket::after {
-    bottom: 0;
-    right: 0;
-    border-bottom: 2px solid;
-    border-right: 2px solid;
-  }
-
-  /* Pulsing alert animation */
-  @keyframes tactical-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
-
-  @keyframes threat-pulse {
-    0%, 100% { 
-      box-shadow: 0 0 5px hsl(0 85% 50% / 0.5);
-    }
-    50% { 
-      box-shadow: 0 0 20px hsl(0 85% 50% / 0.8), 0 0 40px hsl(0 85% 50% / 0.4);
-    }
-  }
-
-  @keyframes scan-line {
-    0% { transform: translateY(-100%); }
-    100% { transform: translateY(100vh); }
-  }
-
-  .animate-tactical-pulse {
-    animation: tactical-pulse 2s ease-in-out infinite;
-  }
-
-  .animate-threat-pulse {
-    animation: threat-pulse 1s ease-in-out infinite;
-  }
-
-  /* Classification banner styles */
-  .classification-banner {
-    font-family: 'Orbitron', sans-serif;
-    font-size: 10px;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    padding: 2px 0;
-    text-align: center;
-  }
-
-  .classification-ts {
-    background: hsl(var(--classification-ts));
-    color: white;
-  }
-
-  .classification-secret {
-    background: hsl(var(--classification-secret));
-    color: white;
-  }
-
-  .classification-confidential {
-    background: hsl(var(--classification-confidential));
-    color: white;
-  }
-
-  .classification-unclassified {
-    background: hsl(var(--classification-unclassified));
-    color: white;
-  }
-
-  /* DEFCON status styles */
-  .defcon-1 { 
-    background: hsl(var(--defcon-1)); 
-    color: white;
-    animation: threat-pulse 0.5s ease-in-out infinite;
-  }
-  .defcon-2 { background: hsl(var(--defcon-2)); color: white; }
-  .defcon-3 { background: hsl(var(--defcon-3)); color: black; }
-  .defcon-4 { background: hsl(var(--defcon-4)); color: white; }
-  .defcon-5 { background: hsl(var(--defcon-5)); color: white; }
-
-  /* Tactical button styles */
-  .btn-tactical {
-    @apply relative overflow-hidden;
-    background: linear-gradient(180deg, hsl(120 30% 18%) 0%, hsl(120 25% 12%) 100%);
-    border: 1px solid hsl(120 40% 25%);
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-family: 'Orbitron', sans-serif;
-  }
-
-  .btn-tactical::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, hsl(120 50% 40% / 0.2), transparent);
-    transition: left 0.5s ease;
-  }
-
-  .btn-tactical:hover::before {
-    left: 100%;
-  }
-
-  /* Terminal cursor blink */
-  @keyframes cursor-blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
-  }
-
-  .terminal-cursor::after {
-    content: '█';
-    animation: cursor-blink 1s infinite;
-    color: hsl(var(--accent));
-  }
-
-  /* Status indicator lights */
-  .status-light {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    display: inline-block;
-  }
-
-  .status-light.active {
-    background: hsl(var(--success));
-    box-shadow: 0 0 8px hsl(var(--success));
-  }
-
-  .status-light.warning {
-    background: hsl(var(--warning));
-    box-shadow: 0 0 8px hsl(var(--warning));
-  }
-
-  .status-light.critical {
-    background: hsl(var(--destructive));
-    box-shadow: 0 0 8px hsl(var(--destructive));
-    animation: tactical-pulse 1s infinite;
-  }
-
-  .status-light.inactive {
-    background: hsl(var(--muted-foreground));
-  }
-}
-
-@layer components {
-  /* Tactical card with HUD styling */
-  .tactical-card {
-    @apply relative border rounded-sm bg-card;
-    border-color: hsl(120 30% 20%);
-    box-shadow: var(--shadow-hud);
-  }
-
-  .tactical-card::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 1px;
-    background: linear-gradient(90deg, transparent, hsl(120 50% 40% / 0.5), transparent);
-  }
-
-  /* Encrypted data indicator */
-  .encrypted-field {
-    @apply relative;
-  }
-
-  .encrypted-field::after {
-    content: '🔒';
-    position: absolute;
-    right: 8px;
-    top: 50%;
-    transform: translateY(-50%);
-    font-size: 12px;
-    opacity: 0.6;
-  }
-
-  /* Session timer */
-  .session-timer {
-    font-family: 'Share Tech Mono', monospace;
-    font-size: 11px;
-    color: hsl(var(--warning));
-    letter-spacing: 0.1em;
+    @apply bg-background text-foreground;
   }
 }
