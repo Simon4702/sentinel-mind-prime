@@ -1,46 +1,50 @@
 import { ReactNode } from "react";
-import { Shield } from "lucide-react";
-import { useAuth } from "@/hooks/useAuth";
-import { UserProfileDropdown } from "@/components/UserProfileDropdown";
-import { Navigation } from "@/components/Navigation";
-import { NotificationCenter } from "@/components/NotificationCenter";
+import { TacticalHeader, TacticalNavigation, ClassificationBanner } from "@/components/tactical";
 
 interface LayoutProps {
   children: ReactNode;
 }
 
 export const Layout = ({ children }: LayoutProps) => {
-  const { profile } = useAuth();
-
   return (
-    <div className="min-h-screen bg-background">
-      {/* Top Header */}
-      <nav className="border-b border-primary/20 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <Shield className="h-8 w-8 text-primary" />
-              <div>
-                <h1 className="text-xl font-bold">SentinelMind</h1>
-                <p className="text-sm text-muted-foreground">
-                  {profile?.department || 'Security Platform'}
-                </p>
-              </div>
-            </div>
-            
+    <div className="min-h-screen bg-background tactical-grid">
+      {/* Classification Banner */}
+      <ClassificationBanner level="UNCLASSIFIED" caveats={['FOUO']} position="top" />
+      
+      {/* Add padding for classification banner */}
+      <div className="pt-5">
+        {/* Tactical Header */}
+        <TacticalHeader classification="UNCLASSIFIED" />
+
+        {/* Tactical Navigation */}
+        <TacticalNavigation />
+
+        {/* Main Content with scanline effect */}
+        <main className="scanline min-h-[calc(100vh-180px)]">
+          {children}
+        </main>
+
+        {/* Footer Status Bar */}
+        <footer className="border-t border-accent/20 bg-black/60 px-4 py-2">
+          <div className="container mx-auto flex items-center justify-between text-[10px] font-mono text-muted-foreground">
             <div className="flex items-center gap-4">
-              <NotificationCenter />
-              <UserProfileDropdown />
+              <span>SENTINEL PRIME v3.0.0-TACTICAL</span>
+              <span className="text-accent">|</span>
+              <span className="flex items-center gap-1">
+                <span className="status-light active" />
+                ALL SYSTEMS NOMINAL
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <span>ENCRYPTION: AES-256-GCM</span>
+              <span className="text-accent">|</span>
+              <span>AUDIT: ENABLED</span>
+              <span className="text-accent">|</span>
+              <span>MFA: ACTIVE</span>
             </div>
           </div>
-        </div>
-      </nav>
-
-      {/* Navigation Menu */}
-      <Navigation />
-
-      {/* Main Content */}
-      <main>{children}</main>
+        </footer>
+      </div>
     </div>
   );
 };

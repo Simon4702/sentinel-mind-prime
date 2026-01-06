@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2, Shield, Lock, Fingerprint, Radio } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { userSignUpSchema, userSignInSchema, emailSchema, passwordSchema } from "@/lib/validation";
 
@@ -62,7 +62,6 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-    // Validate input
     const validation = userSignUpSchema.safeParse({
       email: email.trim(),
       password,
@@ -110,7 +109,6 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-    // Validate input
     const validation = userSignInSchema.safeParse({
       email: email.trim(),
       password
@@ -144,7 +142,6 @@ const Auth = () => {
     setLoading(true);
     setError("");
 
-    // Validate email
     const validation = emailSchema.safeParse(email.trim());
     if (!validation.success) {
       setError(validation.error.errors[0].message);
@@ -182,7 +179,6 @@ const Auth = () => {
       return;
     }
 
-    // Validate password strength
     const validation = passwordSchema.safeParse(newPassword);
     if (!validation.success) {
       setError(validation.error.errors[0].message);
@@ -222,194 +218,300 @@ const Auth = () => {
     }
   };
 
+  const currentTime = new Date().toISOString().replace('T', ' ').substring(0, 19) + 'Z';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background/95 to-primary/5 flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <Shield className="h-12 w-12 text-primary" />
+    <div className="min-h-screen bg-background tactical-grid flex flex-col">
+      {/* Classification Banner */}
+      <div className="classification-banner classification-unclassified">
+        UNCLASSIFIED // FOUO
+      </div>
+
+      {/* Status Bar */}
+      <div className="border-b border-accent/20 bg-black/60 px-4 py-1">
+        <div className="container mx-auto flex items-center justify-between text-[10px] font-mono text-muted-foreground">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1">
+              <span className="status-light active" />
+              SECURE CONNECTION
+            </span>
+            <span className="flex items-center gap-1">
+              <Lock className="h-3 w-3" />
+              TLS 1.3 / AES-256-GCM
+            </span>
           </div>
-          <CardTitle className="text-2xl font-bold">SentinelMind</CardTitle>
-          <CardDescription>
-            Secure access to your cybersecurity platform
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="signin" className="w-full">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="signin">Sign In</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="signin">
-              {recoveryMode ? (
-                <form onSubmit={handleUpdatePassword} className="space-y-4">
+          <span>{currentTime}</span>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="flex-1 flex items-center justify-center p-4 relative">
+        {/* Background Shield */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <svg 
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 opacity-[0.03] w-[800px] h-[800px]" 
+            viewBox="0 0 400 400" 
+            fill="none"
+          >
+            <path 
+              d="M200 50 L320 100 L320 200 Q320 280 200 350 Q80 280 80 200 L80 100 Z" 
+              stroke="hsl(45, 100%, 50%)" 
+              strokeWidth="2" 
+              fill="none"
+            />
+            <path 
+              d="M200 80 L290 115 L290 190 Q290 250 200 310 Q110 250 110 190 L110 115 Z" 
+              stroke="hsl(120, 60%, 40%)" 
+              strokeWidth="1" 
+              fill="none" 
+            />
+          </svg>
+        </div>
+
+        <Card className="w-full max-w-md tactical-card relative z-10">
+          <CardHeader className="text-center pb-4">
+            <div className="flex justify-center mb-4">
+              <div className="w-16 h-16 border-2 border-primary rounded-sm flex items-center justify-center bg-black/50 relative">
+                <Shield className="h-9 w-9 text-primary" />
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-success rounded-full animate-tactical-pulse" />
+              </div>
+            </div>
+            <CardTitle className="font-tactical text-2xl tracking-wider text-primary">
+              SENTINEL PRIME
+            </CardTitle>
+            <CardDescription className="font-mono text-[11px] tracking-wider">
+              TACTICAL DEFENSE OPERATIONS CENTER
+            </CardDescription>
+            <div className="flex items-center justify-center gap-2 mt-2 text-[10px] font-mono text-muted-foreground">
+              <Fingerprint className="h-3 w-3" />
+              <span>SECURE ACCESS TERMINAL</span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="signin" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 bg-muted/30">
+                <TabsTrigger value="signin" className="font-tactical text-xs tracking-wider">
+                  Sign In
+                </TabsTrigger>
+                <TabsTrigger value="signup" className="font-tactical text-xs tracking-wider">
+                  Sign Up
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="signin">
+                {recoveryMode ? (
+                  <form onSubmit={handleUpdatePassword} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="new-password-reset" className="font-mono text-xs uppercase tracking-wider">
+                        New Password
+                      </Label>
+                      <Input
+                        id="new-password-reset"
+                        type="password"
+                        placeholder="Enter your new password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        required
+                        className="bg-muted/30 border-accent/30 font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirm-password-reset" className="font-mono text-xs uppercase tracking-wider">
+                        Confirm New Password
+                      </Label>
+                      <Input
+                        id="confirm-password-reset"
+                        type="password"
+                        placeholder="Confirm your new password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        required
+                        className="bg-muted/30 border-accent/30 font-mono"
+                      />
+                    </div>
+                    {error && (
+                      <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+                        <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button type="submit" className="w-full btn-tactical font-tactical tracking-wider" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      UPDATE PASSWORD
+                    </Button>
+                  </form>
+                ) : !resetMode ? (
+                  <form onSubmit={handleSignIn} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-email" className="font-mono text-xs uppercase tracking-wider">
+                        Email
+                      </Label>
+                      <Input
+                        id="signin-email"
+                        type="email"
+                        placeholder="Enter your email"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="bg-muted/30 border-accent/30 font-mono"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="signin-password" className="font-mono text-xs uppercase tracking-wider">
+                        Password
+                      </Label>
+                      <Input
+                        id="signin-password"
+                        type="password"
+                        placeholder="Enter your password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                        className="bg-muted/30 border-accent/30 font-mono"
+                      />
+                    </div>
+                    {error && (
+                      <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+                        <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button type="submit" className="w-full font-tactical tracking-wider" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      <Lock className="mr-2 h-4 w-4" />
+                      AUTHENTICATE
+                    </Button>
+                    <div className="text-center">
+                      <Button 
+                        type="button" 
+                        variant="link" 
+                        className="text-xs font-mono text-muted-foreground hover:text-primary"
+                        onClick={() => setResetMode(true)}
+                      >
+                        Forgot your password?
+                      </Button>
+                    </div>
+                  </form>
+                ) : (
+                  <form onSubmit={handleResetPassword} className="space-y-4 mt-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="reset-email" className="font-mono text-xs uppercase tracking-wider">
+                        Email
+                      </Label>
+                      <Input
+                        id="reset-email"
+                        type="email"
+                        placeholder="Enter your email address"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                        className="bg-muted/30 border-accent/30 font-mono"
+                      />
+                    </div>
+                    {error && (
+                      <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+                        <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
+                      </Alert>
+                    )}
+                    <Button type="submit" className="w-full font-tactical tracking-wider" disabled={loading}>
+                      {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                      SEND RESET LINK
+                    </Button>
+                    <div className="text-center">
+                      <Button 
+                        type="button" 
+                        variant="link" 
+                        className="text-xs font-mono text-muted-foreground hover:text-primary"
+                        onClick={() => {
+                          setResetMode(false);
+                          setError("");
+                        }}
+                      >
+                        Back to sign in
+                      </Button>
+                    </div>
+                  </form>
+                )}
+              </TabsContent>
+              
+              <TabsContent value="signup">
+                <form onSubmit={handleSignUp} className="space-y-4 mt-4">
                   <div className="space-y-2">
-                    <Label htmlFor="new-password-reset">New Password</Label>
+                    <Label htmlFor="signup-name" className="font-mono text-xs uppercase tracking-wider">
+                      Full Name
+                    </Label>
                     <Input
-                      id="new-password-reset"
-                      type="password"
-                      placeholder="Enter your new password"
-                      value={newPassword}
-                      onChange={(e) => setNewPassword(e.target.value)}
+                      id="signup-name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
                       required
+                      className="bg-muted/30 border-accent/30 font-mono"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="confirm-password-reset">Confirm New Password</Label>
+                    <Label htmlFor="signup-email" className="font-mono text-xs uppercase tracking-wider">
+                      Email
+                    </Label>
                     <Input
-                      id="confirm-password-reset"
-                      type="password"
-                      placeholder="Confirm your new password"
-                      value={confirmPassword}
-                      onChange={(e) => setConfirmPassword(e.target.value)}
-                      required
-                    />
-                  </div>
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Update Password
-                  </Button>
-                </form>
-              ) : !resetMode ? (
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
+                      id="signup-email"
                       type="email"
                       placeholder="Enter your email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      className="bg-muted/30 border-accent/30 font-mono"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
+                    <Label htmlFor="signup-password" className="font-mono text-xs uppercase tracking-wider">
+                      Password
+                    </Label>
                     <Input
-                      id="signin-password"
+                      id="signup-password"
                       type="password"
-                      placeholder="Enter your password"
+                      placeholder="Choose a strong password"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      className="bg-muted/30 border-accent/30 font-mono"
                     />
                   </div>
                   {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
+                    <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+                      <AlertDescription className="font-mono text-xs">{error}</AlertDescription>
                     </Alert>
                   )}
-                  <Button type="submit" className="w-full" disabled={loading}>
+                  <Button type="submit" className="w-full font-tactical tracking-wider" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign In
+                    <Fingerprint className="mr-2 h-4 w-4" />
+                    CREATE ACCOUNT
                   </Button>
-                  <div className="text-center">
-                    <Button 
-                      type="button" 
-                      variant="link" 
-                      className="text-sm text-muted-foreground"
-                      onClick={() => setResetMode(true)}
-                    >
-                      Forgot your password?
-                    </Button>
-                  </div>
                 </form>
-              ) : (
-                <form onSubmit={handleResetPassword} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="reset-email">Email</Label>
-                    <Input
-                      id="reset-email"
-                      type="email"
-                      placeholder="Enter your email address"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      required
-                    />
-                  </div>
-                  {error && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{error}</AlertDescription>
-                    </Alert>
-                  )}
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Send Reset Link
-                  </Button>
-                  <div className="text-center">
-                    <Button 
-                      type="button" 
-                      variant="link" 
-                      className="text-sm text-muted-foreground"
-                      onClick={() => {
-                        setResetMode(false);
-                        setError("");
-                      }}
-                    >
-                      Back to sign in
-                    </Button>
-                  </div>
-                </form>
-              )}
-            </TabsContent>
-            
-            <TabsContent value="signup">
-              <form onSubmit={handleSignUp} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="signup-name">Full Name</Label>
-                  <Input
-                    id="signup-name"
-                    type="text"
-                    placeholder="Enter your full name"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
-                  <Input
-                    id="signup-email"
-                    type="email"
-                    placeholder="Enter your email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
-                  <Input
-                    id="signup-password"
-                    type="password"
-                    placeholder="Choose a strong password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                  />
-                </div>
-                {error && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{error}</AlertDescription>
-                  </Alert>
-                )}
-                <Button type="submit" className="w-full" disabled={loading}>
-                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Create Account
-                </Button>
-              </form>
-            </TabsContent>
-            
-          </Tabs>
-        </CardContent>
-      </Card>
+              </TabsContent>
+              
+            </Tabs>
+          </CardContent>
+
+          {/* Security Footer */}
+          <div className="px-6 pb-4 pt-2 border-t border-border/30">
+            <div className="flex items-center justify-center gap-4 text-[9px] font-mono text-muted-foreground">
+              <span className="flex items-center gap-1">
+                <Lock className="h-3 w-3" />
+                256-BIT ENCRYPTION
+              </span>
+              <span className="flex items-center gap-1">
+                <Radio className="h-3 w-3 text-success" />
+                SECURE
+              </span>
+            </div>
+          </div>
+        </Card>
+      </div>
+
+      {/* Bottom Classification Banner */}
+      <div className="classification-banner classification-unclassified">
+        UNCLASSIFIED // FOUO
+      </div>
     </div>
   );
 };
