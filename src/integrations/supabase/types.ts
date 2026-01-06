@@ -594,6 +594,112 @@ export type Database = {
           },
         ]
       }
+      ioc_scan_history: {
+        Row: {
+          alert_generated: boolean | null
+          id: string
+          ioc_id: string
+          is_malicious: boolean | null
+          reputation_change: number | null
+          risk_score: number | null
+          scan_result: Json | null
+          scanned_at: string
+        }
+        Insert: {
+          alert_generated?: boolean | null
+          id?: string
+          ioc_id: string
+          is_malicious?: boolean | null
+          reputation_change?: number | null
+          risk_score?: number | null
+          scan_result?: Json | null
+          scanned_at?: string
+        }
+        Update: {
+          alert_generated?: boolean | null
+          id?: string
+          ioc_id?: string
+          is_malicious?: boolean | null
+          reputation_change?: number | null
+          risk_score?: number | null
+          scan_result?: Json | null
+          scanned_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ioc_scan_history_ioc_id_fkey"
+            columns: ["ioc_id"]
+            isOneToOne: false
+            referencedRelation: "ioc_watchlist"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ioc_watchlist: {
+        Row: {
+          alert_on_change: boolean | null
+          created_at: string
+          description: string | null
+          id: string
+          indicator_type: string
+          indicator_value: string
+          is_active: boolean | null
+          is_malicious: boolean | null
+          last_risk_score: number | null
+          last_scan_at: string | null
+          organization_id: string | null
+          previous_risk_score: number | null
+          scan_frequency_hours: number | null
+          tags: string[] | null
+          updated_at: string
+          was_malicious: boolean | null
+        }
+        Insert: {
+          alert_on_change?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          indicator_type: string
+          indicator_value: string
+          is_active?: boolean | null
+          is_malicious?: boolean | null
+          last_risk_score?: number | null
+          last_scan_at?: string | null
+          organization_id?: string | null
+          previous_risk_score?: number | null
+          scan_frequency_hours?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          was_malicious?: boolean | null
+        }
+        Update: {
+          alert_on_change?: boolean | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          indicator_type?: string
+          indicator_value?: string
+          is_active?: boolean | null
+          is_malicious?: boolean | null
+          last_risk_score?: number | null
+          last_scan_at?: string | null
+          organization_id?: string | null
+          previous_risk_score?: number | null
+          scan_frequency_hours?: number | null
+          tags?: string[] | null
+          updated_at?: string
+          was_malicious?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ioc_watchlist_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       learned_attack_patterns: {
         Row: {
           attack_type: string

@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.adaptive-learning]
 verify_jwt = false
+
+[functions.scheduled-ioc-scan]
+verify_jwt = false
