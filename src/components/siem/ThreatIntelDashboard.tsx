@@ -12,6 +12,7 @@ import {
   PieChart,
   List,
   RefreshCw,
+  Radar,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +44,7 @@ import {
 import { useCyberArsenalScans, useScanStats } from "@/hooks/useCyberArsenalScans";
 import { format, formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { IOCWatchlistManager } from "./IOCWatchlistManager";
 
 const COLORS = {
   virustotal: "#8b5cf6",
@@ -175,6 +177,10 @@ export const ThreatIntelDashboard = () => {
             <TabsTrigger value="analytics" className="gap-2">
               <PieChart className="h-4 w-4" />
               Analytics
+            </TabsTrigger>
+            <TabsTrigger value="watchlist" className="gap-2">
+              <Radar className="h-4 w-4" />
+              IOC Watchlist
             </TabsTrigger>
           </TabsList>
           <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -467,6 +473,10 @@ export const ThreatIntelDashboard = () => {
               </CardContent>
             </Card>
           </div>
+        </TabsContent>
+
+        <TabsContent value="watchlist">
+          <IOCWatchlistManager />
         </TabsContent>
       </Tabs>
     </div>
