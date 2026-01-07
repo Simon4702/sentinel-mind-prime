@@ -31,6 +31,7 @@ const BiometricAuthPanel = ({ userId, userEmail, mode = "settings", onAuthSucces
   
   const {
     isSupported,
+    isInSandbox,
     isRegistering,
     isAuthenticating,
     checkSupport,
@@ -198,7 +199,9 @@ const BiometricAuthPanel = ({ userId, userEmail, mode = "settings", onAuthSucces
           {!isSupported ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 p-3 rounded-lg">
               <AlertTriangle className="h-4 w-4 text-warning" />
-              Device biometrics not supported on this browser/device
+              {isInSandbox 
+                ? "WebAuthn is blocked in preview mode. Use Face Recognition or open in new tab."
+                : "Device biometrics not supported on this browser/device"}
             </div>
           ) : (
             <div className="flex gap-2">

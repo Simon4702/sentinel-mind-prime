@@ -1,12 +1,5 @@
 import { useState, useCallback } from "react";
-import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-
-interface BiometricCredential {
-  id: string;
-  rawId: ArrayBuffer;
-  type: string;
-}
 
 // Convert ArrayBuffer to Base64
 const bufferToBase64 = (buffer: ArrayBuffer): string => {
@@ -28,14 +21,31 @@ const base64ToBuffer = (base64: string): ArrayBuffer => {
   return bytes.buffer;
 };
 
+// Check if we're in an iframe (sandbox environment)
+const isInIframe = (): boolean => {
+  try {
+    return window.self !== window.top;
+  } catch {
+    return true;
+  }
+};
+
 export const useBiometricAuth = () => {
   const [isSupported, setIsSupported] = useState<boolean>(false);
+  const [isInSandbox, setIsInSandbox] = useState<boolean>(false);
   const [isRegistering, setIsRegistering] = useState(false);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const { toast } = useToast();
 
   // Check if WebAuthn is supported
   const checkSupport = useCallback(async (): Promise<boolean> => {
+    // Check if in iframe/sandbox
+    if (isInIframe()) {
+      setIsInSandbox(true);
+      setIsSupported(false);
+      return false;
+    }
+
     if (!window.PublicKeyCredential) {
       setIsSupported(false);
       return false;
@@ -53,6 +63,16 @@ export const useBiometricAuth = () => {
 
   // Register biometric credential
   const registerBiometric = useCallback(async (userId: string, userEmail: string): Promise<boolean> => {
+    // Check sandbox first
+    if (isInIframe()) {
+      toast({
+        title: "Sandbox Environment",
+        description: "WebAuthn biometrics require opening the app in a new window. Use Face Recognition instead.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     if (!window.PublicKeyCredential) {
       toast({
         title: "Not Supported",
@@ -118,11 +138,21 @@ export const useBiometricAuth = () => {
       return true;
     } catch (error) {
       console.error("Biometric registration error:", error);
-      toast({
-        title: "Registration Failed",
-        description: error instanceof Error ? error.message : "Failed to register biometric.",
-        variant: "destructive",
-      });
+      
+      // Check for iframe/sandbox error
+      if (error instanceof Error && error.name === "NotAllowedError") {
+        toast({
+          title: "Sandbox Restriction",
+          description: "WebAuthn is blocked in embedded frames. Open the app in a new tab or use Face Recognition.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Registration Failed",
+          description: error instanceof Error ? error.message : "Failed to register biometric.",
+          variant: "destructive",
+        });
+      }
       setIsRegistering(false);
       return false;
     }
@@ -130,6 +160,16 @@ export const useBiometricAuth = () => {
 
   // Authenticate with biometric
   const authenticateWithBiometric = useCallback(async (userId?: string): Promise<boolean> => {
+    // Check sandbox first
+    if (isInIframe()) {
+      toast({
+        title: "Sandbox Environment",
+        description: "WebAuthn biometrics require opening the app in a new window. Use Face Recognition instead.",
+        variant: "destructive",
+      });
+      return false;
+    }
+
     if (!window.PublicKeyCredential) {
       toast({
         title: "Not Supported",
@@ -204,11 +244,20 @@ export const useBiometricAuth = () => {
       return true;
     } catch (error) {
       console.error("Biometric authentication error:", error);
-      toast({
-        title: "Authentication Failed",
-        description: error instanceof Error ? error.message : "Biometric authentication failed.",
-        variant: "destructive",
-      });
+      
+      if (error instanceof Error && error.name === "NotAllowedError") {
+        toast({
+          title: "Sandbox Restriction",
+          description: "WebAuthn is blocked in embedded frames. Open the app in a new tab or use Face Recognition.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Authentication Failed",
+          description: error instanceof Error ? error.message : "Biometric authentication failed.",
+          variant: "destructive",
+        });
+      }
       setIsAuthenticating(false);
       return false;
     }
@@ -233,6 +282,7 @@ export const useBiometricAuth = () => {
 
   return {
     isSupported,
+    isInSandbox,
     isRegistering,
     isAuthenticating,
     checkSupport,

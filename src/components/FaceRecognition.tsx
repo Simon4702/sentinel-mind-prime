@@ -120,6 +120,11 @@ const FaceRecognition = ({ mode, userId, onSuccess, onCancel, className }: FaceR
     setStatus("idle");
     
     try {
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Camera API not available in this browser");
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: "user",
@@ -132,7 +137,18 @@ const FaceRecognition = ({ mode, userId, onSuccess, onCancel, className }: FaceR
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
-        await videoRef.current.play();
+        
+        // Wait for video to be ready
+        await new Promise<void>((resolve, reject) => {
+          if (!videoRef.current) return reject();
+          videoRef.current.onloadedmetadata = () => {
+            videoRef.current?.play()
+              .then(() => resolve())
+              .catch(reject);
+          };
+          videoRef.current.onerror = () => reject(new Error("Video failed to load"));
+        });
+        
         setIsStreaming(true);
 
         // Start face detection loop
@@ -145,7 +161,42 @@ const FaceRecognition = ({ mode, userId, onSuccess, onCancel, className }: FaceR
       }
     } catch (err) {
       console.error("Camera access error:", err);
-      setError("Unable to access camera. Please ensure camera permissions are granted.");
+      
+      let errorMessage = "Unable to access camera.";
+      if (err instanceof Error) {
+        if (err.name === "NotAllowedError" || err.name === "PermissionDeniedError") {
+          errorMessage = "Camera access denied. Please grant camera permissions in your browser settings.";
+        } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
+          errorMessage = "No camera found. Please connect a camera and try again.";
+        } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
+          errorMessage = "Camera is in use by another application.";
+        } else if (err.name === "OverconstrainedError") {
+          errorMessage = "Camera does not meet requirements. Trying with basic settings...";
+          // Try with basic constraints
+          try {
+            const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
+            streamRef.current = basicStream;
+            if (videoRef.current) {
+              videoRef.current.srcObject = basicStream;
+              await videoRef.current.play();
+              setIsStreaming(true);
+              detectionIntervalRef.current = setInterval(() => {
+                if (videoRef.current && canvasRef.current && videoRef.current.readyState === 4) {
+                  const detected = detectFace(videoRef.current, canvasRef.current);
+                  setFaceDetected(detected);
+                }
+              }, 200);
+              return;
+            }
+          } catch {
+            errorMessage = "Unable to access camera with any settings.";
+          }
+        } else {
+          errorMessage = err.message || "Unable to access camera.";
+        }
+      }
+      
+      setError(errorMessage);
     }
   }, []);
 
