@@ -7,9 +7,11 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, Shield } from "lucide-react";
+import { Loader2, Shield, Fingerprint, ScanFace } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { userSignUpSchema, userSignInSchema, emailSchema, passwordSchema } from "@/lib/validation";
+import BiometricAuthPanel from "@/components/BiometricAuthPanel";
+import { Separator } from "@/components/ui/separator";
 
 const Auth = () => {
   const [loading, setLoading] = useState(false);
@@ -310,6 +312,20 @@ const Auth = () => {
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign In
                   </Button>
+                  
+                  {/* Biometric Login Options */}
+                  <BiometricAuthPanel
+                    userId="pending"
+                    userEmail={email}
+                    mode="login"
+                    onAuthSuccess={() => {
+                      toast({
+                        title: "Biometric Verified",
+                        description: "Please enter your password to complete login.",
+                      });
+                    }}
+                  />
+                  
                   <div className="text-center">
                     <Button 
                       type="button" 

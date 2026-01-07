@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Activity, 
   Brain, 
@@ -12,8 +13,13 @@ import {
   Gauge,
   TrendingUp,
   TrendingDown,
-  User
+  User,
+  Fingerprint,
+  ScanFace,
+  ShieldCheck
 } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import BiometricAuthPanel from "@/components/BiometricAuthPanel";
 
 const mockUserBiometrics = [
   { 
@@ -167,6 +173,7 @@ const BiometricCard = ({ user }: { user: typeof mockUserBiometrics[0] }) => {
 };
 
 export const HumanRiskBiometrics = () => {
+  const { user, profile } = useAuth();
   const highRiskUsers = mockUserBiometrics.filter(u => u.riskLevel === "critical" || u.riskLevel === "high").length;
   const avgFatigue = Math.round(mockUserBiometrics.reduce((acc, u) => acc + u.fatigue, 0) / mockUserBiometrics.length);
   const avgWorkload = Math.round(mockUserBiometrics.reduce((acc, u) => acc + u.workload, 0) / mockUserBiometrics.length);
@@ -180,8 +187,43 @@ export const HumanRiskBiometrics = () => {
           <Activity className="h-6 w-6 text-pink-400" />
           Human Risk Biometrics
         </h2>
-        <p className="text-muted-foreground">Ethical, non-invasive human factor analysis</p>
+        <p className="text-muted-foreground">Ethical, non-invasive human factor analysis & biometric authentication</p>
       </div>
+
+      <Tabs defaultValue="auth" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="auth" className="flex items-center gap-2">
+            <Fingerprint className="h-4 w-4" />
+            Biometric Auth
+          </TabsTrigger>
+          <TabsTrigger value="analytics" className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
+            Risk Analytics
+          </TabsTrigger>
+        </TabsList>
+
+        {/* Biometric Authentication Tab */}
+        <TabsContent value="auth" className="space-y-4">
+          {user ? (
+            <BiometricAuthPanel
+              userId={user.id}
+              userEmail={user.email || ""}
+              mode="settings"
+            />
+          ) : (
+            <Card className="border-border/50">
+              <CardContent className="p-6 text-center">
+                <ShieldCheck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <p className="text-muted-foreground">
+                  Please sign in to configure biometric authentication
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Risk Analytics Tab */}
+        <TabsContent value="analytics" className="space-y-6">
 
       {/* Privacy Notice */}
       <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
@@ -315,6 +357,8 @@ export const HumanRiskBiometrics = () => {
           </div>
         </CardContent>
       </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
