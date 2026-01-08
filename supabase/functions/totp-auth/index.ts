@@ -145,7 +145,8 @@ serve(async (req) => {
 
     const userId = claimsData.user.id;
     const userEmail = claimsData.user.email || 'user';
-    const { action, code } = await req.json();
+    const body = await req.json();
+    const { action, code, secret } = body;
 
     console.log(`TOTP action: ${action} for user: ${userId}`);
 
@@ -205,8 +206,6 @@ serve(async (req) => {
     }
 
     if (action === 'enable') {
-      const { secret } = await req.json();
-      
       if (!code || !secret) {
         return new Response(
           JSON.stringify({ error: 'Code and secret are required' }),
