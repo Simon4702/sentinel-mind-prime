@@ -125,28 +125,50 @@ const FaceRecognition = ({ mode, userId, onSuccess, onCancel, className }: FaceR
         throw new Error("Camera API not available in this browser");
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: "user",
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-        },
-      });
+      // Try with ideal constraints first, then fall back to basic
+      let stream: MediaStream | null = null;
+      
+      const constraints = [
+        { video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } } },
+        { video: { facingMode: "user" } },
+        { video: true }
+      ];
+
+      for (const constraint of constraints) {
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraint);
+          break;
+        } catch (e) {
+          console.log("Constraint failed, trying next:", constraint, e);
+          continue;
+        }
+      }
+
+      if (!stream) {
+        throw new Error("Unable to access camera with any settings");
+      }
 
       streamRef.current = stream;
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
         
-        // Wait for video to be ready
+        // Wait for video to be ready with timeout
         await new Promise<void>((resolve, reject) => {
-          if (!videoRef.current) return reject();
+          if (!videoRef.current) return reject(new Error("Video element not found"));
+          
+          const timeout = setTimeout(() => reject(new Error("Video load timeout")), 10000);
+          
           videoRef.current.onloadedmetadata = () => {
+            clearTimeout(timeout);
             videoRef.current?.play()
               .then(() => resolve())
               .catch(reject);
           };
-          videoRef.current.onerror = () => reject(new Error("Video failed to load"));
+          videoRef.current.onerror = () => {
+            clearTimeout(timeout);
+            reject(new Error("Video failed to load"));
+          };
         });
         
         setIsStreaming(true);
@@ -169,28 +191,11 @@ const FaceRecognition = ({ mode, userId, onSuccess, onCancel, className }: FaceR
         } else if (err.name === "NotFoundError" || err.name === "DevicesNotFoundError") {
           errorMessage = "No camera found. Please connect a camera and try again.";
         } else if (err.name === "NotReadableError" || err.name === "TrackStartError") {
-          errorMessage = "Camera is in use by another application.";
-        } else if (err.name === "OverconstrainedError") {
-          errorMessage = "Camera does not meet requirements. Trying with basic settings...";
-          // Try with basic constraints
-          try {
-            const basicStream = await navigator.mediaDevices.getUserMedia({ video: true });
-            streamRef.current = basicStream;
-            if (videoRef.current) {
-              videoRef.current.srcObject = basicStream;
-              await videoRef.current.play();
-              setIsStreaming(true);
-              detectionIntervalRef.current = setInterval(() => {
-                if (videoRef.current && canvasRef.current && videoRef.current.readyState === 4) {
-                  const detected = detectFace(videoRef.current, canvasRef.current);
-                  setFaceDetected(detected);
-                }
-              }, 200);
-              return;
-            }
-          } catch {
-            errorMessage = "Unable to access camera with any settings.";
-          }
+          errorMessage = "Camera is in use by another application. Please close other apps using the camera.";
+        } else if (err.name === "AbortError") {
+          errorMessage = "Camera access was interrupted. Please try again.";
+        } else if (err.name === "SecurityError") {
+          errorMessage = "Camera access blocked for security reasons. Please check your browser settings.";
         } else {
           errorMessage = err.message || "Unable to access camera.";
         }

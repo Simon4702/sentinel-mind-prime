@@ -17,7 +17,7 @@ import {
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 import { FaceRecognition } from "@/components/FaceRecognition";
 import { TOTPSetup } from "@/components/TOTPSetup";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
 interface BiometricAuthPanelProps {
@@ -142,6 +142,7 @@ const BiometricAuthPanel = ({ userId, userEmail, mode = "settings", onAuthSucces
               <DialogContent className="sm:max-w-md">
                 <DialogHeader>
                   <DialogTitle>Face Verification</DialogTitle>
+                  <DialogDescription>Verify your identity using facial recognition</DialogDescription>
                 </DialogHeader>
                 <FaceRecognition
                   mode="verify"
@@ -294,6 +295,7 @@ const BiometricAuthPanel = ({ userId, userEmail, mode = "settings", onAuthSucces
                 <DialogContent className="sm:max-w-lg">
                   <DialogHeader>
                     <DialogTitle>Register Face ID</DialogTitle>
+                    <DialogDescription>Capture your facial biometrics for secure authentication</DialogDescription>
                   </DialogHeader>
                   <FaceRecognition
                     mode="register"
@@ -324,6 +326,7 @@ const BiometricAuthPanel = ({ userId, userEmail, mode = "settings", onAuthSucces
                   <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                       <DialogTitle>Face Verification Test</DialogTitle>
+                      <DialogDescription>Test your registered facial biometrics</DialogDescription>
                     </DialogHeader>
                     <FaceRecognition
                       mode="verify"
