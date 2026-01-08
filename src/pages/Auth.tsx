@@ -11,6 +11,7 @@ import { Loader2, Shield, Fingerprint, ScanFace } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { userSignUpSchema, userSignInSchema, emailSchema, passwordSchema } from "@/lib/validation";
 import BiometricAuthPanel from "@/components/BiometricAuthPanel";
+import { TOTPSetup } from "@/components/TOTPSetup";
 import { Separator } from "@/components/ui/separator";
 
 const Auth = () => {
@@ -24,6 +25,8 @@ const Auth = () => {
   const [error, setError] = useState("");
   const [resetMode, setResetMode] = useState(false);
   const [recoveryMode, setRecoveryMode] = useState(false);
+  const [totpRequired, setTotpRequired] = useState(false);
+  const [pendingSession, setPendingSession] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -125,7 +128,7 @@ const Auth = () => {
       return;
     }
 
-    const { error: signInError } = await supabase.auth.signInWithPassword({
+    const { data, error: signInError } = await supabase.auth.signInWithPassword({
       email,
       password,
     });
@@ -138,6 +141,14 @@ const Auth = () => {
       } else {
         setError(signInError.message);
       }
+    } else if (data?.user) {
+      // Check if TOTP is enabled for this user
+      const totpEnabled = data.user.user_metadata?.totp_enabled === true;
+      if (totpEnabled) {
+        setTotpRequired(true);
+        setPendingSession(data.session);
+      }
+      // If no TOTP, auth state listener will handle redirect
     }
   };
 
@@ -245,7 +256,35 @@ const Auth = () => {
             </TabsList>
             
             <TabsContent value="signin">
-              {recoveryMode ? (
+              {totpRequired ? (
+                <div className="space-y-4">
+                  <TOTPSetup 
+                    mode="verify" 
+                    onVerified={() => {
+                      setTotpRequired(false);
+                      toast({
+                        title: "Authentication Complete",
+                        description: "Two-factor verification successful.",
+                      });
+                      navigate("/");
+                    }}
+                  />
+                  <div className="text-center">
+                    <Button 
+                      type="button" 
+                      variant="link" 
+                      className="text-sm text-muted-foreground"
+                      onClick={async () => {
+                        await supabase.auth.signOut();
+                        setTotpRequired(false);
+                        setPendingSession(null);
+                      }}
+                    >
+                      Use different account
+                    </Button>
+                  </div>
+                </div>
+              ) : recoveryMode ? (
                 <form onSubmit={handleUpdatePassword} className="space-y-4">
                   <div className="space-y-2">
                     <Label htmlFor="new-password-reset">New Password</Label>

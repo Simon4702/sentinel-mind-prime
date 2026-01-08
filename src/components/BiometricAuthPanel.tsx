@@ -11,10 +11,12 @@ import {
   Check, 
   X, 
   Settings,
-  AlertTriangle
+  AlertTriangle,
+  Key
 } from "lucide-react";
 import { useBiometricAuth } from "@/hooks/useBiometricAuth";
 import { FaceRecognition } from "@/components/FaceRecognition";
+import { TOTPSetup } from "@/components/TOTPSetup";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
@@ -345,6 +347,11 @@ const BiometricAuthPanel = ({ userId, userEmail, mode = "settings", onAuthSucces
           </div>
         </div>
 
+        <Separator />
+
+        {/* TOTP Authentication */}
+        <TOTPSetup />
+
         {/* Security Info */}
         <div className="bg-muted/30 rounded-lg p-4 space-y-2">
           <div className="flex items-center gap-2 text-sm font-medium">
@@ -355,6 +362,7 @@ const BiometricAuthPanel = ({ userId, userEmail, mode = "settings", onAuthSucces
             <li>• Biometric data stored locally on device</li>
             <li>• Face hashes use one-way encryption</li>
             <li>• WebAuthn follows FIDO2 standards</li>
+            <li>• TOTP codes expire every 30 seconds</li>
             <li>• No raw biometric data leaves your device</li>
           </ul>
         </div>
