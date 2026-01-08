@@ -14,3 +14,6 @@ verify_jwt = false
 
 [functions.scheduled-ioc-scan]
 verify_jwt = false
+
+[functions.totp-auth]
+verify_jwt = false
