@@ -7,6 +7,79 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// In-memory rate limiting store (per isolate)
+// Note: In production, use Redis or database for distributed rate limiting
+const rateLimitStore = new Map<string, { attempts: number; lastAttempt: number; lockedUntil: number }>();
+
+const RATE_LIMIT_CONFIG = {
+  maxAttempts: 5,
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  lockoutMs: 30 * 60 * 1000, // 30 minutes after max failures
+};
+
+// Check and update rate limit for a user
+function checkRateLimit(userId: string): { allowed: boolean; remainingAttempts: number; retryAfter?: number } {
+  const now = Date.now();
+  const record = rateLimitStore.get(userId);
+
+  // Clean up old records
+  if (record && now - record.lastAttempt > RATE_LIMIT_CONFIG.windowMs) {
+    rateLimitStore.delete(userId);
+    return { allowed: true, remainingAttempts: RATE_LIMIT_CONFIG.maxAttempts };
+  }
+
+  // Check if user is locked out
+  if (record && record.lockedUntil > now) {
+    const retryAfter = Math.ceil((record.lockedUntil - now) / 1000);
+    return { allowed: false, remainingAttempts: 0, retryAfter };
+  }
+
+  // Check attempts within window
+  if (record && record.attempts >= RATE_LIMIT_CONFIG.maxAttempts) {
+    // Lock the user out
+    record.lockedUntil = now + RATE_LIMIT_CONFIG.lockoutMs;
+    rateLimitStore.set(userId, record);
+    const retryAfter = Math.ceil(RATE_LIMIT_CONFIG.lockoutMs / 1000);
+    return { allowed: false, remainingAttempts: 0, retryAfter };
+  }
+
+  const remainingAttempts = record 
+    ? RATE_LIMIT_CONFIG.maxAttempts - record.attempts 
+    : RATE_LIMIT_CONFIG.maxAttempts;
+  
+  return { allowed: true, remainingAttempts };
+}
+
+// Record a failed attempt
+function recordFailedAttempt(userId: string): void {
+  const now = Date.now();
+  const record = rateLimitStore.get(userId) || { attempts: 0, lastAttempt: now, lockedUntil: 0 };
+  
+  record.attempts += 1;
+  record.lastAttempt = now;
+  
+  if (record.attempts >= RATE_LIMIT_CONFIG.maxAttempts) {
+    record.lockedUntil = now + RATE_LIMIT_CONFIG.lockoutMs;
+  }
+  
+  rateLimitStore.set(userId, record);
+}
+
+// Clear rate limit on successful verification
+function clearRateLimit(userId: string): void {
+  rateLimitStore.delete(userId);
+}
+
+// Constant-time string comparison to prevent timing attacks
+function constantTimeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false;
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
 // Generate a random secret for TOTP
 function generateSecret(): string {
   const array = new Uint8Array(20);
@@ -74,7 +147,7 @@ async function hmacSha1TOTP(key: Uint8Array, message: Uint8Array): Promise<strin
   return otp.toString().padStart(6, '0');
 }
 
-// Verify TOTP with window for clock drift
+// Verify TOTP with window for clock drift - uses constant-time comparison
 async function verifyTOTP(secret: string, code: string, window: number = 1): Promise<boolean> {
   for (let i = -window; i <= window; i++) {
     const epoch = Math.floor(Date.now() / 1000) + (i * 30);
@@ -105,7 +178,8 @@ async function verifyTOTP(secret: string, code: string, window: number = 1): Pro
     }
     
     const expectedCode = await hmacSha1TOTP(new Uint8Array(secretBytes), counterBytes);
-    if (expectedCode === code) {
+    // Use constant-time comparison to prevent timing attacks
+    if (constantTimeEqual(expectedCode, code)) {
       return true;
     }
   }
@@ -183,6 +257,26 @@ serve(async (req) => {
     }
 
     if (action === 'verify') {
+      // Check rate limit before processing verification
+      const rateLimit = checkRateLimit(userId);
+      if (!rateLimit.allowed) {
+        console.log(`Rate limit exceeded for user ${userId}. Retry after ${rateLimit.retryAfter} seconds`);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Too many failed attempts. Please try again later.',
+            retryAfter: rateLimit.retryAfter 
+          }),
+          { 
+            status: 429, 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json',
+              'Retry-After': String(rateLimit.retryAfter)
+            } 
+          }
+        );
+      }
+
       if (!code) {
         return new Response(
           JSON.stringify({ error: 'Code is required' }),
@@ -202,7 +296,17 @@ serve(async (req) => {
       }
 
       const isValid = await verifyTOTP(storedSecret, code);
-      console.log(`TOTP verification for user ${userId}: ${isValid}`);
+      
+      if (isValid) {
+        // Clear rate limit on successful verification
+        clearRateLimit(userId);
+        console.log(`TOTP verification successful for user ${userId}`);
+      } else {
+        // Record failed attempt
+        recordFailedAttempt(userId);
+        const updatedLimit = checkRateLimit(userId);
+        console.log(`TOTP verification failed for user ${userId}. Remaining attempts: ${updatedLimit.remainingAttempts}`);
+      }
       
       return new Response(
         JSON.stringify({ valid: isValid }),
@@ -211,6 +315,26 @@ serve(async (req) => {
     }
 
     if (action === 'enable') {
+      // Check rate limit for enable action too (uses code verification)
+      const rateLimit = checkRateLimit(userId);
+      if (!rateLimit.allowed) {
+        console.log(`Rate limit exceeded for user ${userId} during enable`);
+        return new Response(
+          JSON.stringify({ 
+            error: 'Too many failed attempts. Please try again later.',
+            retryAfter: rateLimit.retryAfter 
+          }),
+          { 
+            status: 429, 
+            headers: { 
+              ...corsHeaders, 
+              'Content-Type': 'application/json',
+              'Retry-After': String(rateLimit.retryAfter)
+            } 
+          }
+        );
+      }
+
       if (!code || !secret) {
         return new Response(
           JSON.stringify({ error: 'Code and secret are required' }),
@@ -222,11 +346,19 @@ serve(async (req) => {
       const isValid = await verifyTOTP(secret, code);
       
       if (!isValid) {
+        // Record failed attempt
+        recordFailedAttempt(userId);
+        const updatedLimit = checkRateLimit(userId);
+        console.log(`TOTP enable verification failed for user ${userId}. Remaining attempts: ${updatedLimit.remainingAttempts}`);
+        
         return new Response(
           JSON.stringify({ error: 'Invalid code', enabled: false }),
           { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
+
+      // Clear rate limit on successful verification
+      clearRateLimit(userId);
 
       // Store the secret in user metadata using admin client
       const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
