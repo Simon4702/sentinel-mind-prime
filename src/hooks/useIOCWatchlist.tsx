@@ -76,6 +76,20 @@ export const useAddIOC = () => {
       scan_frequency_hours?: number;
       tags?: string[];
     }) => {
+      // Get user's organization_id from their profile
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('organization_id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profileError || !profile?.organization_id) {
+        throw new Error('Could not determine user organization');
+      }
+
       const { data, error } = await supabase
         .from('ioc_watchlist')
         .insert({
@@ -84,7 +98,7 @@ export const useAddIOC = () => {
           description: ioc.description,
           scan_frequency_hours: ioc.scan_frequency_hours || 24,
           tags: ioc.tags || [],
-          organization_id: '00000000-0000-0000-0000-000000000001',
+          organization_id: profile.organization_id,
         })
         .select()
         .single();
