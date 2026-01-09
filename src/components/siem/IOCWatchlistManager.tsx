@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Eye, EyeOff, Trash2, Plus, RefreshCw, AlertTriangle, 
-  Shield, Clock, TrendingUp, TrendingDown, Minus 
+  Shield, Clock, TrendingUp, TrendingDown, Minus, Brain 
 } from 'lucide-react';
 import { 
   useIOCWatchlist, 
@@ -18,6 +19,8 @@ import {
   useTriggerIOCScan,
   IOCWatchlistItem 
 } from '@/hooks/useIOCWatchlist';
+import { useAIAnalysis } from '@/hooks/useAIAnalysis';
+import { AIAnalysisPanel } from '@/components/AIAnalysisPanel';
 import { format } from 'date-fns';
 
 export const IOCWatchlistManager = () => {
@@ -26,8 +29,17 @@ export const IOCWatchlistManager = () => {
   const removeIOC = useRemoveIOC();
   const toggleIOC = useToggleIOC();
   const triggerScan = useTriggerIOCScan();
+  const { isAnalyzing, analysisResult, analyzeIOC, clearAnalysis } = useAIAnalysis();
 
   const [newIOC, setNewIOC] = useState({ type: 'ip', value: '', description: '' });
+  const [selectedIOC, setSelectedIOC] = useState<IOCWatchlistItem | null>(null);
+  const [showAnalysisDialog, setShowAnalysisDialog] = useState(false);
+
+  const handleAnalyzeIOC = (item: IOCWatchlistItem) => {
+    setSelectedIOC(item);
+    setShowAnalysisDialog(true);
+    clearAnalysis();
+  };
 
   const handleAddIOC = () => {
     if (!newIOC.value.trim()) return;
@@ -219,14 +231,25 @@ export const IOCWatchlistManager = () => {
                         </div>
                       </td>
                       <td className="p-3">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7 text-destructive hover:text-destructive"
-                          onClick={() => removeIOC.mutate(item.id)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-primary hover:text-primary"
+                            onClick={() => handleAnalyzeIOC(item)}
+                            title="AI Analysis"
+                          >
+                            <Brain className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive"
+                            onClick={() => removeIOC.mutate(item.id)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -236,6 +259,47 @@ export const IOCWatchlistManager = () => {
           </ScrollArea>
         </CardContent>
       </Card>
+
+      {/* AI Analysis Dialog */}
+      <Dialog open={showAnalysisDialog} onOpenChange={setShowAnalysisDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Brain className="h-5 w-5 text-primary" />
+              IOC Intelligence Analysis
+            </DialogTitle>
+          </DialogHeader>
+          {selectedIOC && (
+            <div className="space-y-4">
+              <div className="p-3 bg-muted/30 rounded-lg">
+                <div className="flex items-center gap-2 mb-2">
+                  <Badge variant="outline" className="font-mono">
+                    {selectedIOC.indicator_type.toUpperCase()}
+                  </Badge>
+                  <span className="font-mono text-sm">{selectedIOC.indicator_value}</span>
+                </div>
+                {selectedIOC.description && (
+                  <p className="text-sm text-muted-foreground">{selectedIOC.description}</p>
+                )}
+              </div>
+              <AIAnalysisPanel
+                title={`Analyzing ${selectedIOC.indicator_value}`}
+                analysisType="IOC"
+                isAnalyzing={isAnalyzing}
+                analysisResult={analysisResult}
+                onAnalyze={() => analyzeIOC({
+                  indicator_type: selectedIOC.indicator_type,
+                  indicator_value: selectedIOC.indicator_value,
+                  risk_score: selectedIOC.last_risk_score ?? undefined,
+                  tags: selectedIOC.tags ?? undefined,
+                  description: selectedIOC.description ?? undefined,
+                })}
+                onClose={() => setShowAnalysisDialog(false)}
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
