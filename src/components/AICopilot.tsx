@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Badge } from "@/components/ui/badge";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Bot, 
   Send, 
@@ -14,7 +15,14 @@ import {
   Loader2,
   User,
   Copy,
-  CheckCircle
+  CheckCircle,
+  Trash2,
+  Maximize2,
+  Minimize2,
+  Zap,
+  Target,
+  Search,
+  Network
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
@@ -22,13 +30,18 @@ interface Message {
   role: "user" | "assistant";
   content: string;
   timestamp: Date;
+  type?: "general" | "analysis" | "report" | "investigation";
 }
 
 const quickActions = [
-  { label: "Summarize today's incidents", icon: FileText },
-  { label: "Explain threat severity levels", icon: AlertTriangle },
-  { label: "Suggest investigation steps", icon: Lightbulb },
-  { label: "Generate executive report", icon: Shield },
+  { label: "Summarize today's incidents", icon: FileText, type: "report" },
+  { label: "Explain threat severity levels", icon: AlertTriangle, type: "general" },
+  { label: "Suggest investigation steps for ransomware", icon: Lightbulb, type: "investigation" },
+  { label: "Generate executive security report", icon: Shield, type: "report" },
+  { label: "Analyze IOC: suspicious IP 185.220.101.0", icon: Target, type: "analysis" },
+  { label: "Explain MITRE ATT&CK technique T1566", icon: Network, type: "general" },
+  { label: "What are signs of lateral movement?", icon: Search, type: "investigation" },
+  { label: "Create incident response checklist", icon: Zap, type: "investigation" },
 ];
 
 const CHAT_URL = "https://pboadzdcadtvuqzigysv.supabase.co/functions/v1/ai-copilot";
@@ -38,13 +51,15 @@ export const AICopilot = () => {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: "Hello! I'm your Security AI Copilot powered by advanced AI. I can help you analyze incidents, explain threats in plain language, suggest investigation steps, and generate reports. How can I assist you today?",
+      content: "Hello! I'm your Security AI Copilot powered by advanced AI. I can help you:\n\n• **Analyze threats & IOCs** - Get instant risk assessments\n• **Investigate incidents** - Step-by-step guidance\n• **Generate reports** - Executive summaries & technical docs\n• **Explain attacks** - Plain language threat explanations\n• **MITRE ATT&CK mapping** - Understand techniques & tactics\n\nHow can I assist you today?",
       timestamp: new Date(),
+      type: "general",
     }
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState<number | null>(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -81,7 +96,6 @@ export const AICopilot = () => {
     let textBuffer = "";
     let assistantContent = "";
 
-    // Add empty assistant message
     setMessages(prev => [...prev, { role: "assistant", content: "", timestamp: new Date() }]);
 
     while (true) {
@@ -122,7 +136,6 @@ export const AICopilot = () => {
       }
     }
 
-    // Final flush
     if (textBuffer.trim()) {
       for (let raw of textBuffer.split("\n")) {
         if (!raw) continue;
@@ -176,7 +189,6 @@ export const AICopilot = () => {
         variant: "destructive",
       });
       
-      // Remove the empty assistant message if streaming failed
       setMessages(prev => {
         const lastMessage = prev[prev.length - 1];
         if (lastMessage?.role === "assistant" && !lastMessage.content) {
@@ -189,27 +201,59 @@ export const AICopilot = () => {
     }
   };
 
+  const clearConversation = () => {
+    setMessages([{
+      role: "assistant",
+      content: "Conversation cleared. How can I help you with your security analysis?",
+      timestamp: new Date(),
+      type: "general",
+    }]);
+    toast({ title: "Conversation cleared" });
+  };
+
   const copyToClipboard = (text: string, index: number) => {
     navigator.clipboard.writeText(text);
     setCopied(index);
+    toast({ title: "Copied to clipboard" });
     setTimeout(() => setCopied(null), 2000);
+  };
+
+  const getMessageTypeColor = (type?: string) => {
+    switch (type) {
+      case "analysis": return "bg-purple-500/20 text-purple-400";
+      case "report": return "bg-blue-500/20 text-blue-400";
+      case "investigation": return "bg-amber-500/20 text-amber-400";
+      default: return "bg-emerald-500/20 text-emerald-400";
+    }
   };
 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h2 className="text-2xl font-bold flex items-center gap-2">
-          <Bot className="h-6 w-6 text-blue-400" />
-          Security AI Copilot
-        </h2>
-        <p className="text-muted-foreground">Your private AI assistant for security analysis</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="text-2xl font-bold flex items-center gap-2">
+            <Bot className="h-6 w-6 text-primary" />
+            Security AI Copilot
+            <Badge variant="outline" className="ml-2 text-xs">Powered by Gemini</Badge>
+          </h2>
+          <p className="text-muted-foreground">Your AI assistant for threat analysis, incident response & security insights</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={clearConversation}>
+            <Trash2 className="h-4 w-4 mr-1" />
+            Clear
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setIsExpanded(!isExpanded)}>
+            {isExpanded ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+          </Button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+      <div className={`grid gap-6 ${isExpanded ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-4'}`}>
         {/* Chat Interface */}
-        <div className="lg:col-span-3">
-          <Card className="h-[600px] flex flex-col">
+        <div className={isExpanded ? '' : 'lg:col-span-3'}>
+          <Card className={`flex flex-col ${isExpanded ? 'h-[700px]' : 'h-[600px]'}`}>
             <CardContent className="flex-1 flex flex-col p-4">
               {/* Messages */}
               <ScrollArea className="flex-1 pr-4" ref={scrollRef}>
@@ -217,17 +261,22 @@ export const AICopilot = () => {
                   {messages.map((message, index) => (
                     <div key={index} className={`flex gap-3 ${message.role === "user" ? "justify-end" : ""}`}>
                       {message.role === "assistant" && (
-                        <div className="p-2 rounded-full bg-blue-500/20 h-fit">
-                          <Bot className="h-4 w-4 text-blue-400" />
+                        <div className="p-2 rounded-full bg-primary/20 h-fit">
+                          <Bot className="h-4 w-4 text-primary" />
                         </div>
                       )}
-                      <div className={`max-w-[80%] ${message.role === "user" ? "order-first" : ""}`}>
-                        <div className={`p-3 rounded-lg ${
+                      <div className={`max-w-[85%] ${message.role === "user" ? "order-first" : ""}`}>
+                        <div className={`p-4 rounded-lg ${
                           message.role === "user" 
                             ? "bg-primary text-primary-foreground" 
                             : "bg-card border border-border"
                         }`}>
-                          <div className="whitespace-pre-wrap text-sm">{message.content}</div>
+                          {message.role === "assistant" && message.type && (
+                            <Badge className={`${getMessageTypeColor(message.type)} mb-2`}>
+                              {message.type}
+                            </Badge>
+                          )}
+                          <div className="whitespace-pre-wrap text-sm leading-relaxed">{message.content}</div>
                         </div>
                         <div className="flex items-center gap-2 mt-1">
                           <span className="text-xs text-muted-foreground">
@@ -258,11 +307,14 @@ export const AICopilot = () => {
                   ))}
                   {isLoading && messages[messages.length - 1]?.role !== "assistant" && (
                     <div className="flex gap-3">
-                      <div className="p-2 rounded-full bg-blue-500/20 h-fit">
-                        <Bot className="h-4 w-4 text-blue-400" />
+                      <div className="p-2 rounded-full bg-primary/20 h-fit">
+                        <Bot className="h-4 w-4 text-primary animate-pulse" />
                       </div>
-                      <div className="p-3 rounded-lg bg-card border border-border">
-                        <Loader2 className="h-4 w-4 animate-spin" />
+                      <div className="p-4 rounded-lg bg-card border border-border">
+                        <div className="flex items-center gap-2">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          <span className="text-sm text-muted-foreground">Analyzing...</span>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -271,14 +323,25 @@ export const AICopilot = () => {
 
               {/* Input */}
               <div className="flex gap-2 mt-4 pt-4 border-t">
-                <Input
-                  placeholder="Ask me anything about security..."
+                <Textarea
+                  placeholder="Ask about threats, incidents, IOCs, or security best practices..."
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && sendMessage(input)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      sendMessage(input);
+                    }
+                  }}
                   disabled={isLoading}
+                  className="min-h-[44px] max-h-[120px] resize-none"
+                  rows={1}
                 />
-                <Button onClick={() => sendMessage(input)} disabled={isLoading || !input.trim()}>
+                <Button 
+                  onClick={() => sendMessage(input)} 
+                  disabled={isLoading || !input.trim()}
+                  className="shrink-0"
+                >
                   <Send className="h-4 w-4" />
                 </Button>
               </div>
@@ -286,78 +349,84 @@ export const AICopilot = () => {
           </Card>
         </div>
 
-        {/* Quick Actions */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-yellow-400" />
-                Quick Actions
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {quickActions.map((action, index) => {
-                  const Icon = action.icon;
-                  return (
-                    <Button
-                      key={index}
-                      variant="outline"
-                      className="w-full justify-start text-left h-auto py-3"
-                      onClick={() => sendMessage(action.label)}
-                      disabled={isLoading}
-                    >
-                      <Icon className="h-4 w-4 mr-2 shrink-0" />
-                      <span className="text-sm">{action.label}</span>
-                    </Button>
-                  );
-                })}
-              </div>
-            </CardContent>
-          </Card>
+        {/* Quick Actions - Only show when not expanded */}
+        {!isExpanded && (
+          <div className="space-y-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-yellow-400" />
+                  Quick Actions
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  {quickActions.map((action, index) => {
+                    const Icon = action.icon;
+                    return (
+                      <Button
+                        key={index}
+                        variant="outline"
+                        className="w-full justify-start text-left h-auto py-2.5 px-3"
+                        onClick={() => sendMessage(action.label)}
+                        disabled={isLoading}
+                      >
+                        <Icon className="h-4 w-4 mr-2 shrink-0" />
+                        <span className="text-xs leading-tight">{action.label}</span>
+                      </Button>
+                    );
+                  })}
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">Capabilities</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2 text-sm text-muted-foreground">
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-emerald-400" />
-                  <span>Incident summarization</span>
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Capabilities</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 text-emerald-400" />
+                    <span>Incident summarization</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 text-emerald-400" />
+                    <span>Threat explanation</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 text-emerald-400" />
+                    <span>IOC analysis</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 text-emerald-400" />
+                    <span>MITRE ATT&CK mapping</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 text-emerald-400" />
+                    <span>Investigation guidance</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="h-3 w-3 text-emerald-400" />
+                    <span>Report generation</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-emerald-400" />
-                  <span>Threat explanation</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-emerald-400" />
-                  <span>Investigation guidance</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-emerald-400" />
-                  <span>Report generation</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <CheckCircle className="h-3 w-3 text-emerald-400" />
-                  <span>Plain language alerts</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20">
-            <CardContent className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Shield className="h-4 w-4 text-blue-400" />
-                <span className="font-medium text-sm">AI Powered</span>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Powered by advanced AI for real-time security analysis and insights.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+            <Card className="bg-gradient-to-br from-primary/10 to-purple-500/10 border-primary/20">
+              <CardContent className="p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <Shield className="h-4 w-4 text-primary" />
+                  <span className="font-medium text-sm">AI Powered</span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Powered by Google Gemini for real-time security analysis, threat intelligence, and incident response guidance.
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
     </div>
   );
