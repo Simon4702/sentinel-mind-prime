@@ -1,8 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { PlaybookExecutor } from "@/components/PlaybookExecutor";
+import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
+import { useAIAnalysis } from "@/hooks/useAIAnalysis";
 import type { Database } from "@/integrations/supabase/types";
-import { AlertTriangle, Calendar, Clock, User } from "lucide-react";
+import { AlertTriangle, Calendar, Clock, User, Brain } from "lucide-react";
 
 type Incident = Database["public"]["Tables"]["security_incidents"]["Row"];
 
@@ -11,6 +14,21 @@ interface IncidentDetailsProps {
 }
 
 export const IncidentDetails = ({ incident }: IncidentDetailsProps) => {
+  const { summarizeIncident, isAnalyzing, analysisResult, clearAnalysis } = useAIAnalysis();
+
+  const handleAIAnalysis = () => {
+    summarizeIncident({
+      title: incident.title,
+      incident_type: incident.incident_type,
+      severity: incident.severity,
+      status: incident.status,
+      detected_at: incident.detected_at,
+      description: incident.description || undefined,
+      detection_method: incident.detection_method || undefined,
+      risk_score: incident.risk_score || undefined,
+    });
+  };
+
   const getSeverityColor = (severity: string) => {
     switch (severity) {
       case "critical":
@@ -55,13 +73,25 @@ export const IncidentDetails = ({ incident }: IncidentDetailsProps) => {
                 {incident.description || "No description provided"}
               </CardDescription>
             </div>
-            <div className="flex flex-col gap-2">
-              <Badge variant={getSeverityColor(incident.severity)}>
-                {incident.severity}
-              </Badge>
-              <Badge variant={getStatusColor(incident.status)}>
-                {incident.status}
-              </Badge>
+            <div className="flex items-start gap-2">
+              <div className="flex flex-col gap-2">
+                <Badge variant={getSeverityColor(incident.severity)}>
+                  {incident.severity}
+                </Badge>
+                <Badge variant={getStatusColor(incident.status)}>
+                  {incident.status}
+                </Badge>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleAIAnalysis}
+                disabled={isAnalyzing}
+                className="gap-2"
+              >
+                <Brain className="h-4 w-4" />
+                {isAnalyzing ? "Analyzing..." : "AI Summary"}
+              </Button>
             </div>
           </div>
         </CardHeader>
@@ -94,6 +124,17 @@ export const IncidentDetails = ({ incident }: IncidentDetailsProps) => {
           </div>
         </CardContent>
       </Card>
+
+      {(analysisResult || isAnalyzing) && (
+        <AIAnalysisPanel
+          title="Incident Summary & Recommendations"
+          analysisType="Incident"
+          isAnalyzing={isAnalyzing}
+          analysisResult={analysisResult}
+          onAnalyze={handleAIAnalysis}
+          onClose={clearAnalysis}
+        />
+      )}
 
       <PlaybookExecutor
         incidentId={incident.id}

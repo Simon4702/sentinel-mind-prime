@@ -1,18 +1,37 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useThreatEnrichment } from "@/hooks/useThreatEnrichment";
-import { Database, Globe, MapPin, Shield, Users, Zap } from "lucide-react";
+import { useAIAnalysis } from "@/hooks/useAIAnalysis";
+import { AIAnalysisPanel } from "@/components/AIAnalysisPanel";
+import { Database, Globe, MapPin, Shield, Users, Zap, Brain } from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 
 interface ThreatEnrichmentPanelProps {
   threatId: string;
+  threatData?: {
+    threat_type: string;
+    indicator_type: string;
+    indicator_value: string;
+    severity: string;
+    source: string;
+    description?: string;
+    first_seen?: string;
+  };
 }
 
-export const ThreatEnrichmentPanel = ({ threatId }: ThreatEnrichmentPanelProps) => {
+export const ThreatEnrichmentPanel = ({ threatId, threatData }: ThreatEnrichmentPanelProps) => {
   const { data: enrichments, isLoading, error } = useThreatEnrichment(threatId);
+  const { enrichThreat, isAnalyzing, analysisResult, clearAnalysis } = useAIAnalysis();
+
+  const handleAIEnrich = () => {
+    if (threatData) {
+      enrichThreat(threatData);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -75,13 +94,29 @@ export const ThreatEnrichmentPanel = ({ threatId }: ThreatEnrichmentPanelProps) 
   return (
     <Card className="border-primary/20 bg-gradient-cyber shadow-elegant">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Database className="h-5 w-5 text-primary" />
-          Threat Intelligence Enrichment
-        </CardTitle>
-        <CardDescription>
-          External intelligence data from {enrichments.length} source{enrichments.length !== 1 ? 's' : ''}
-        </CardDescription>
+        <div className="flex items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <Database className="h-5 w-5 text-primary" />
+              Threat Intelligence Enrichment
+            </CardTitle>
+            <CardDescription>
+              External intelligence data from {enrichments.length} source{enrichments.length !== 1 ? 's' : ''}
+            </CardDescription>
+          </div>
+          {threatData && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleAIEnrich}
+              disabled={isAnalyzing}
+              className="gap-2"
+            >
+              <Brain className="h-4 w-4" />
+              {isAnalyzing ? "Analyzing..." : "AI Enrich"}
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-96">
@@ -194,6 +229,17 @@ export const ThreatEnrichmentPanel = ({ threatId }: ThreatEnrichmentPanelProps) 
           </div>
         </ScrollArea>
       </CardContent>
+
+      {(analysisResult || isAnalyzing) && (
+        <AIAnalysisPanel
+          title="AI-Powered Threat Enrichment"
+          analysisType="Threat"
+          isAnalyzing={isAnalyzing}
+          analysisResult={analysisResult}
+          onAnalyze={handleAIEnrich}
+          onClose={clearAnalysis}
+        />
+      )}
     </Card>
   );
 };
