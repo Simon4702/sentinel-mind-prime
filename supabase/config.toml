@@ -23,3 +23,6 @@ verify_jwt = false
 
 [functions.send-alert-notification]
 verify_jwt = false
+
+[functions.fetch-threat-intel]
+verify_jwt = false
