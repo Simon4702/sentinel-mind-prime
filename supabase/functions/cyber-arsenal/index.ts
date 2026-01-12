@@ -13,6 +13,90 @@ interface CommandRequest {
   options?: Record<string, any>;
 }
 
+// Input validation constants
+const MAX_COMMAND_LENGTH = 500;
+const MAX_TARGET_LENGTH = 255;
+const MAX_TOOL_ID_LENGTH = 50;
+
+// Allowed tool IDs (whitelist)
+const ALLOWED_TOOL_IDS = [
+  'nmap', 'metasploit', 'wireshark', 'burp', 'snort', 'osquery',
+  'hashcat', 'autopsy', 'volatility', 'zeek', 'misp', 'kali',
+  'virustotal', 'abuseipdb', 'shodan'
+];
+
+// Validation patterns
+const VALID_IP_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
+const VALID_DOMAIN_REGEX = /^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$/;
+const VALID_HASH_REGEX = /^[a-fA-F0-9]{32,64}$/;
+const VALID_CIDR_REGEX = /^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\/(?:[0-9]|[1-2][0-9]|3[0-2])$/;
+
+// Characters to sanitize from commands (prevent shell injection)
+const DANGEROUS_CHARS_REGEX = /[;&|`$(){}[\]<>\\!]/g;
+
+function validateAndSanitizeInput(input: string, maxLength: number): { valid: boolean; sanitized: string; error?: string } {
+  if (!input || typeof input !== 'string') {
+    return { valid: false, sanitized: '', error: 'Input is required and must be a string' };
+  }
+  
+  if (input.length > maxLength) {
+    return { valid: false, sanitized: '', error: `Input exceeds maximum length of ${maxLength} characters` };
+  }
+  
+  // Remove dangerous characters
+  const sanitized = input.replace(DANGEROUS_CHARS_REGEX, '').trim();
+  
+  return { valid: true, sanitized };
+}
+
+function validateTarget(target: string): { valid: boolean; type: 'ip' | 'domain' | 'hash' | 'cidr' | 'search'; error?: string } {
+  if (!target || typeof target !== 'string') {
+    return { valid: true, type: 'search' }; // Target is optional for some tools
+  }
+  
+  if (target.length > MAX_TARGET_LENGTH) {
+    return { valid: false, type: 'search', error: `Target exceeds maximum length of ${MAX_TARGET_LENGTH} characters` };
+  }
+  
+  // Check for dangerous characters in target
+  if (DANGEROUS_CHARS_REGEX.test(target)) {
+    return { valid: false, type: 'search', error: 'Target contains invalid characters' };
+  }
+  
+  // Determine target type
+  if (VALID_IP_REGEX.test(target)) {
+    return { valid: true, type: 'ip' };
+  }
+  if (VALID_CIDR_REGEX.test(target)) {
+    return { valid: true, type: 'cidr' };
+  }
+  if (VALID_HASH_REGEX.test(target)) {
+    return { valid: true, type: 'hash' };
+  }
+  if (VALID_DOMAIN_REGEX.test(target)) {
+    return { valid: true, type: 'domain' };
+  }
+  
+  // Generic search query (for Shodan searches, etc.)
+  return { valid: true, type: 'search' };
+}
+
+function validateToolId(toolId: string): { valid: boolean; error?: string } {
+  if (!toolId || typeof toolId !== 'string') {
+    return { valid: false, error: 'Tool ID is required' };
+  }
+  
+  if (toolId.length > MAX_TOOL_ID_LENGTH) {
+    return { valid: false, error: 'Invalid tool ID' };
+  }
+  
+  if (!ALLOWED_TOOL_IDS.includes(toolId.toLowerCase())) {
+    return { valid: false, error: `Tool '${toolId}' is not available. Allowed tools: ${ALLOWED_TOOL_IDS.join(', ')}` };
+  }
+  
+  return { valid: true };
+}
+
 // Real API integrations
 async function queryVirusTotal(target: string, queryType: 'ip' | 'domain' | 'hash'): Promise<string> {
   const apiKey = Deno.env.get('VIRUSTOTAL_API_KEY');
@@ -494,9 +578,54 @@ serve(async (req) => {
     const body: CommandRequest = await req.json();
     const { toolId, command, target } = body;
 
-    console.log(`[CYBER-ARSENAL] User ${user.email} executing ${toolId}: ${command} ${target ? `-> ${target}` : ''}`);
+    // Validate toolId
+    const toolValidation = validateToolId(toolId);
+    if (!toolValidation.valid) {
+      return new Response(JSON.stringify({ 
+        error: toolValidation.error,
+        success: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    const simulator = toolSimulators[toolId];
+    // Validate and sanitize command
+    const commandValidation = validateAndSanitizeInput(command, MAX_COMMAND_LENGTH);
+    if (!commandValidation.valid) {
+      return new Response(JSON.stringify({ 
+        error: `Invalid command: ${commandValidation.error}`,
+        success: false 
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+    const sanitizedCommand = commandValidation.sanitized;
+
+    // Validate target if provided
+    let sanitizedTarget: string | undefined = undefined;
+    if (target) {
+      const targetValidation = validateTarget(target);
+      if (!targetValidation.valid) {
+        return new Response(JSON.stringify({ 
+          error: `Invalid target: ${targetValidation.error}`,
+          success: false 
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // Sanitize target
+      const targetSanitization = validateAndSanitizeInput(target, MAX_TARGET_LENGTH);
+      if (targetSanitization.valid) {
+        sanitizedTarget = targetSanitization.sanitized;
+      }
+    }
+
+    console.log(`[CYBER-ARSENAL] User ${user.email} executing ${toolId}: ${sanitizedCommand} ${sanitizedTarget ? `-> ${sanitizedTarget}` : ''}`);
+
+    const simulator = toolSimulators[toolId.toLowerCase()];
     if (!simulator) {
       return new Response(JSON.stringify({ 
         error: `Tool '${toolId}' not available`,
@@ -507,24 +636,23 @@ serve(async (req) => {
       });
     }
 
-    const output = await simulator(command, target);
+    const output = await simulator(sanitizedCommand, sanitizedTarget);
 
     // Parse results for threat intel tools and store in database
     let scanRecord = null;
-    if (['virustotal', 'abuseipdb', 'shodan'].includes(toolId) && target) {
-      const ipRegex = /^(\d{1,3}\.){3}\d{1,3}$/;
-      const hashRegex = /^[a-fA-F0-9]{32,64}$/;
-      
-      let targetType = 'domain';
-      if (ipRegex.test(target)) targetType = 'ip';
-      else if (hashRegex.test(target)) targetType = 'hash';
+    const normalizedToolId = toolId.toLowerCase();
+    if (['virustotal', 'abuseipdb', 'shodan'].includes(normalizedToolId) && sanitizedTarget) {
+      // Use the validated target type from earlier validation
+      const targetValidation = validateTarget(sanitizedTarget);
+      let targetType = targetValidation.type === 'search' ? 'domain' : targetValidation.type;
+      if (targetType === 'cidr') targetType = 'ip'; // Treat CIDR as IP type for storage
       
       // Parse output for risk indicators
       let riskScore = 0;
       let isMalicious = false;
       let tags: string[] = [];
       
-      if (toolId === 'virustotal') {
+      if (normalizedToolId === 'virustotal') {
         const maliciousMatch = output.match(/Malicious:\s*(\d+)/);
         const suspiciousMatch = output.match(/Suspicious:\s*(\d+)/);
         if (maliciousMatch) {
@@ -535,7 +663,7 @@ serve(async (req) => {
         }
         if (suspiciousMatch && parseInt(suspiciousMatch[1]) > 0) tags.push('suspicious');
         tags.push('virustotal');
-      } else if (toolId === 'abuseipdb') {
+      } else if (normalizedToolId === 'abuseipdb') {
         const scoreMatch = output.match(/Abuse Confidence Score:\s*(\d+)%/);
         const reportsMatch = output.match(/Total Reports:\s*(\d+)/);
         if (scoreMatch) {
@@ -546,7 +674,7 @@ serve(async (req) => {
         if (output.includes('Is Tor: Yes')) tags.push('tor');
         if (output.includes('Is Public Proxy: Yes')) tags.push('proxy');
         tags.push('abuseipdb');
-      } else if (toolId === 'shodan') {
+      } else if (normalizedToolId === 'shodan') {
         if (output.includes('VULNERABILITIES DETECTED')) {
           isMalicious = false; // Vulns don't mean malicious
           const vulnMatch = output.match(/VULNERABILITIES DETECTED:\s*\n([\s\S]*?)(?=\n\n|Services:)/);
@@ -570,8 +698,8 @@ serve(async (req) => {
         .insert({
           organization_id: profile.organization_id,
           user_id: user.id,
-          tool_name: toolId,
-          target: target,
+          tool_name: normalizedToolId,
+          target: sanitizedTarget,
           target_type: targetType,
           scan_result: { raw_output: output, parsed_at: new Date().toISOString() },
           risk_score: riskScore,
@@ -595,17 +723,22 @@ serve(async (req) => {
         user_id: user.id,
         action: 'cyber_tool_execution',
         resource_type: 'cyber_arsenal',
-        resource_id: toolId,
-        details: { command, target, output_length: output.length, scan_id: scanRecord?.id },
+        resource_id: normalizedToolId,
+        details: { 
+          command: sanitizedCommand, 
+          target: sanitizedTarget, 
+          output_length: output.length, 
+          scan_id: scanRecord?.id 
+        },
         result: 'success',
       });
     }
 
     return new Response(JSON.stringify({
       success: true,
-      toolId,
-      command,
-      target,
+      toolId: normalizedToolId,
+      command: sanitizedCommand,
+      target: sanitizedTarget,
       output,
       scanId: scanRecord?.id,
       timestamp: new Date().toISOString(),
