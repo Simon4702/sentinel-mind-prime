@@ -22,6 +22,7 @@ import { Link } from "react-router-dom";
 import heroCyber from "@/assets/hero-cyber.jpg";
 import { UserProfileDropdown } from "@/components/UserProfileDropdown";
 import { Navigation } from "@/components/Navigation";
+import { RealtimeActivityFeed } from "@/components/RealtimeActivityFeed";
 
 export const SentinelDashboard = () => {
   const { profile, signOut } = useAuth();
@@ -216,6 +217,11 @@ export const SentinelDashboard = () => {
                 <Progress value={stats.criticalThreats === 0 ? 100 : Math.max(0, 100 - stats.criticalThreats * 10)} className="h-2" />
               </CardContent>
             </Card>
+          </div>
+
+          {/* Live Activity Feed */}
+          <div className="mb-12">
+            <RealtimeActivityFeed />
           </div>
 
           {/* Main Content Grid */}
