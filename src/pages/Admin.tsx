@@ -2,11 +2,11 @@ import { useAuth } from "@/hooks/useAuth";
 import DatabaseViewer from "@/components/DatabaseViewer";
 import UserManagement from "@/components/UserManagement";
 import { AuditTrail } from "@/components/AuditTrail";
+import { DataPopulatorButton } from "@/components/DataPopulatorButton";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Shield, Users, Database, Settings } from "lucide-react";
 import { Layout } from "@/components/Layout";
-
 const Admin = () => {
   const { profile } = useAuth();
 
@@ -44,6 +44,22 @@ const Admin = () => {
                   <Badge variant="secondary">Level {profile?.security_clearance_level}</Badge>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Threat Data Populator */}
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Database className="h-5 w-5" />
+                Populate Threat Intelligence
+              </CardTitle>
+              <CardDescription>
+                Load real-world threat data including IOCs, alerts, and honeypots
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <DataPopulatorButton />
             </CardContent>
           </Card>
 
