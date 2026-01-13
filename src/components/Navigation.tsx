@@ -59,6 +59,12 @@ const navItems = [
     roles: ["admin", "security_analyst"],
   },
   {
+    name: "Automation",
+    path: "/automation",
+    icon: Zap,
+    roles: ["admin", "security_analyst"],
+  },
+  {
     name: "Executive",
     path: "/executive",
     icon: TrendingUp,

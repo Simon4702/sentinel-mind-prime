@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.fetch-threat-intel]
 verify_jwt = false
+
+[functions.threat-enrichment]
+verify_jwt = false
+
+[functions.auto-remediation]
+verify_jwt = false
