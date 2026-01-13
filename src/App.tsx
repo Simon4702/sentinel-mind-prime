@@ -17,6 +17,7 @@ import Analytics from "./pages/Analytics";
 import Executive from "./pages/Executive";
 import AdvancedSecurity from "./pages/AdvancedSecurity";
 import SIEM from "./pages/SIEM";
+import Automation from "./pages/Automation";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -83,6 +84,11 @@ const App = () => (
             <Route path="/siem" element={
               <ProtectedRoute requiredRole="security_analyst">
                 <SIEM />
+              </ProtectedRoute>
+            } />
+            <Route path="/automation" element={
+              <ProtectedRoute requiredRole="security_analyst">
+                <Automation />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
