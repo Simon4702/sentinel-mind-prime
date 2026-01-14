@@ -13,6 +13,7 @@ import {
   TrendingUp,
   Zap,
   Server,
+  ClipboardCheck,
 } from "lucide-react";
 
 const navItems = [
@@ -80,6 +81,12 @@ const navItems = [
     name: "SIEM",
     path: "/siem",
     icon: Server,
+    roles: ["admin", "security_analyst"],
+  },
+  {
+    name: "Compliance",
+    path: "/compliance",
+    icon: ClipboardCheck,
     roles: ["admin", "security_analyst"],
   },
   {
