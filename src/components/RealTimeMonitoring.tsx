@@ -27,11 +27,13 @@ import {
   RefreshCw,
   Play,
   Pause,
-  Filter
+  Filter,
+  Search,
 } from "lucide-react";
 import ThreatMap from "@/components/ThreatMap";
 import { useThreatData } from "@/hooks/useThreatData";
 import { ThreatEnrichmentPanel } from "@/components/ThreatEnrichmentPanel";
+import { ThreatIntelEnricher } from "@/components/ThreatIntelEnricher";
 
 // Simulated network metrics generator
 const generateNetworkMetrics = () => ({
@@ -374,10 +376,14 @@ export const RealTimeMonitoring = () => {
         </div>
 
         <Tabs defaultValue="threats" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-6 bg-card border-primary/20">
+          <TabsList className="grid w-full grid-cols-7 bg-card border-primary/20">
             <TabsTrigger value="threats" className="flex items-center gap-2">
               <AlertTriangle className="h-4 w-4" />
               Threat Feed
+            </TabsTrigger>
+            <TabsTrigger value="enrich" className="flex items-center gap-2">
+              <Search className="h-4 w-4" />
+              IOC Lookup
             </TabsTrigger>
             <TabsTrigger value="intelligence" className="flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -403,6 +409,10 @@ export const RealTimeMonitoring = () => {
 
           <TabsContent value="threats">
             <ThreatFeed onSelectThreat={setSelectedThreatId} />
+          </TabsContent>
+
+          <TabsContent value="enrich">
+            <ThreatIntelEnricher />
           </TabsContent>
 
           <TabsContent value="intelligence">
