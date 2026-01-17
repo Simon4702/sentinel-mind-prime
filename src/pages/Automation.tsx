@@ -3,7 +3,8 @@ import { Layout } from "@/components/Layout";
 import { AutoRemediationEngine } from "@/components/AutoRemediationEngine";
 import { ThreatEnrichmentEngine } from "@/components/ThreatEnrichmentEngine";
 import { AdaptiveLearningSystem } from "@/components/AdaptiveLearningSystem";
-import { Zap, Fingerprint, Brain } from "lucide-react";
+import { AlertEscalationManager } from "@/components/AlertEscalationManager";
+import { Zap, Fingerprint, Brain, ArrowUpCircle } from "lucide-react";
 
 const Automation = () => {
   return (
@@ -17,7 +18,7 @@ const Automation = () => {
         </div>
 
         <Tabs defaultValue="enrichment" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 lg:w-[500px]">
+          <TabsList className="grid w-full grid-cols-4 lg:w-[650px]">
             <TabsTrigger value="enrichment" className="gap-2">
               <Fingerprint className="h-4 w-4" />
               Enrichment
@@ -26,9 +27,13 @@ const Automation = () => {
               <Zap className="h-4 w-4" />
               Auto-Remediation
             </TabsTrigger>
+            <TabsTrigger value="escalation" className="gap-2">
+              <ArrowUpCircle className="h-4 w-4" />
+              Escalation
+            </TabsTrigger>
             <TabsTrigger value="learning" className="gap-2">
               <Brain className="h-4 w-4" />
-              Adaptive Learning
+              Learning
             </TabsTrigger>
           </TabsList>
 
@@ -38,6 +43,10 @@ const Automation = () => {
 
           <TabsContent value="remediation">
             <AutoRemediationEngine />
+          </TabsContent>
+
+          <TabsContent value="escalation">
+            <AlertEscalationManager />
           </TabsContent>
 
           <TabsContent value="learning">
