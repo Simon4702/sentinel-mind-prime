@@ -86,6 +86,120 @@ export type Database = {
           },
         ]
       }
+      alert_escalation_history: {
+        Row: {
+          acknowledged_at: string | null
+          acknowledged_by: string | null
+          alert_id: string | null
+          escalated_at: string
+          escalated_to: string
+          escalation_level: number
+          id: string
+          notification_sent: boolean | null
+          rule_id: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string | null
+          escalated_at?: string
+          escalated_to: string
+          escalation_level: number
+          id?: string
+          notification_sent?: boolean | null
+          rule_id?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          acknowledged_by?: string | null
+          alert_id?: string | null
+          escalated_at?: string
+          escalated_to?: string
+          escalation_level?: number
+          id?: string
+          notification_sent?: boolean | null
+          rule_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_escalation_history_acknowledged_by_fkey"
+            columns: ["acknowledged_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "alert_escalation_history_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "security_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "alert_escalation_history_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "alert_escalation_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      alert_escalation_rules: {
+        Row: {
+          created_at: string
+          description: string | null
+          escalation_level: number
+          escalation_target: string
+          escalation_target_type: string
+          id: string
+          is_enabled: boolean | null
+          notification_channels: string[] | null
+          organization_id: string | null
+          response_time_minutes: number
+          rule_name: string
+          severity_trigger: string[]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          escalation_level?: number
+          escalation_target: string
+          escalation_target_type?: string
+          id?: string
+          is_enabled?: boolean | null
+          notification_channels?: string[] | null
+          organization_id?: string | null
+          response_time_minutes?: number
+          rule_name: string
+          severity_trigger?: string[]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          escalation_level?: number
+          escalation_target?: string
+          escalation_target_type?: string
+          id?: string
+          is_enabled?: boolean | null
+          notification_channels?: string[] | null
+          organization_id?: string | null
+          response_time_minutes?: number
+          rule_name?: string
+          severity_trigger?: string[]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "alert_escalation_rules_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       audit_logs: {
         Row: {
           action: string
