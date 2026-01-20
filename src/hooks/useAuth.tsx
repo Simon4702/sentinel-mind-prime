@@ -126,6 +126,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   const signOut = async () => {
+    // Clear biometric/face recognition data from localStorage on logout
+    // This prevents sensitive authentication data from persisting after logout
+    localStorage.removeItem('face_recognition_data');
+    localStorage.removeItem('biometric_credentials');
+    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
