@@ -19,6 +19,10 @@ import AdvancedSecurity from "./pages/AdvancedSecurity";
 import SIEM from "./pages/SIEM";
 import Automation from "./pages/Automation";
 import Compliance from "./pages/Compliance";
+import PeerGroupAnalysisPage from "./pages/PeerGroupAnalysis";
+import ActivityTimelinePage from "./pages/ActivityTimeline";
+import RiskTrendsPage from "./pages/RiskTrends";
+import HeatmapsPage from "./pages/Heatmaps";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +99,26 @@ const App = () => (
             <Route path="/compliance" element={
               <ProtectedRoute requiredRole="security_analyst">
                 <Compliance />
+              </ProtectedRoute>
+            } />
+            <Route path="/peer-analysis" element={
+              <ProtectedRoute requiredRole="security_analyst">
+                <PeerGroupAnalysisPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/activity-timeline" element={
+              <ProtectedRoute requiredRole="security_analyst">
+                <ActivityTimelinePage />
+              </ProtectedRoute>
+            } />
+            <Route path="/risk-trends" element={
+              <ProtectedRoute requiredRole="security_analyst">
+                <RiskTrendsPage />
+              </ProtectedRoute>
+            } />
+            <Route path="/heatmaps" element={
+              <ProtectedRoute requiredRole="security_analyst">
+                <HeatmapsPage />
               </ProtectedRoute>
             } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

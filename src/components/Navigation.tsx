@@ -14,6 +14,9 @@ import {
   Zap,
   Server,
   ClipboardCheck,
+  Users,
+  Clock,
+  Flame,
 } from "lucide-react";
 
 const navItems = [
@@ -87,6 +90,30 @@ const navItems = [
     name: "Compliance",
     path: "/compliance",
     icon: ClipboardCheck,
+    roles: ["admin", "security_analyst"],
+  },
+  {
+    name: "Peer Analysis",
+    path: "/peer-analysis",
+    icon: Users,
+    roles: ["admin", "security_analyst"],
+  },
+  {
+    name: "Activity Timeline",
+    path: "/activity-timeline",
+    icon: Clock,
+    roles: ["admin", "security_analyst"],
+  },
+  {
+    name: "Risk Trends",
+    path: "/risk-trends",
+    icon: TrendingUp,
+    roles: ["admin", "security_analyst"],
+  },
+  {
+    name: "Heatmaps",
+    path: "/heatmaps",
+    icon: Flame,
     roles: ["admin", "security_analyst"],
   },
   {
